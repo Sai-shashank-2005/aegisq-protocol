@@ -10,36 +10,40 @@ import (
 )
 
 type Transaction struct {
-	Sender    string `json:"sender"`
+	SenderID  string `json:"sender_id"`
+	PublicKey []byte `json:"public_key"`
 	DataHash  string `json:"data_hash"`
 	Metadata  string `json:"metadata"`
 	Timestamp int64  `json:"timestamp"`
 	Signature []byte `json:"signature"`
 }
 
-// NewTransaction creates a new unsigned transaction
-func NewTransaction(sender, dataHash, metadata string) *Transaction {
+// NewTransaction binds transaction to a specific identity
+func NewTransaction(node *identity.NodeIdentity, dataHash, metadata string) *Transaction {
 	return &Transaction{
-		Sender:    sender,
+		SenderID:  node.NodeID,
+		PublicKey: node.PublicKey,
 		DataHash:  dataHash,
 		Metadata:  metadata,
 		Timestamp: time.Now().Unix(),
 	}
 }
 
-// computePayloadHash hashes transaction fields excluding signature
+// computePayloadHash hashes all canonical transaction fields except signature
 func (tx *Transaction) computePayloadHash() ([]byte, error) {
-	if tx.Sender == "" || tx.DataHash == "" {
+	if tx.SenderID == "" || tx.DataHash == "" {
 		return nil, errors.New("invalid transaction fields")
 	}
 
 	payload := struct {
-		Sender    string `json:"sender"`
+		SenderID  string `json:"sender_id"`
+		PublicKey []byte `json:"public_key"`
 		DataHash  string `json:"data_hash"`
 		Metadata  string `json:"metadata"`
 		Timestamp int64  `json:"timestamp"`
 	}{
-		Sender:    tx.Sender,
+		SenderID:  tx.SenderID,
+		PublicKey: tx.PublicKey,
 		DataHash:  tx.DataHash,
 		Metadata:  tx.Metadata,
 		Timestamp: tx.Timestamp,
@@ -53,7 +57,12 @@ func (tx *Transaction) computePayloadHash() ([]byte, error) {
 	return crypto.Hash(bytes), nil
 }
 
-// SignWithIdentity signs transaction using node identity
+// Hash exposes deterministic payload hash (for Merkle usage)
+func (tx *Transaction) Hash() ([]byte, error) {
+	return tx.computePayloadHash()
+}
+
+// SignWithIdentity signs transaction using node private key
 func (tx *Transaction) SignWithIdentity(node *identity.NodeIdentity) error {
 	hash, err := tx.computePayloadHash()
 	if err != nil {
@@ -69,12 +78,12 @@ func (tx *Transaction) SignWithIdentity(node *identity.NodeIdentity) error {
 	return nil
 }
 
-// Verify verifies transaction signature using public key and signer
-func (tx *Transaction) Verify(signer crypto.Signer, publicKey []byte) (bool, error) {
+// Verify verifies transaction signature using its own public key
+func (tx *Transaction) Verify(signer crypto.Signer) (bool, error) {
 	hash, err := tx.computePayloadHash()
 	if err != nil {
 		return false, err
 	}
 
-	return signer.Verify(publicKey, hash, tx.Signature), nil
+	return signer.Verify(tx.PublicKey, hash, tx.Signature), nil
 }
