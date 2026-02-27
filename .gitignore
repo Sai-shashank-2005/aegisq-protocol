@@ -1,0 +1,75 @@
+# =========================
+# Go Build Artifacts
+# =========================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build directories
+/bin/
+/build/
+/dist/
+
+# Go coverage
+coverage.out
+coverage.html
+
+# Go workspace (if used later)
+go.work
+
+# =========================
+# Dependency Directories
+# =========================
+vendor/
+
+# =========================
+# IDE / Editor Files
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.log
+
+# =========================
+# OS Generated Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Environment Files
+# =========================
+.env
+.env.*
+
+# =========================
+# Local Key Material (CRITICAL)
+# =========================
+*.key
+*.pem
+*.priv
+*.pub
+keys/
+node_keys/
+
+# =========================
+# Temporary Test Files
+# =========================
+tmp/
+temp/
+
+# =========================
+# Docker (future use)
+# =========================
+docker-compose.override.yml
+
+# =========================
+# Kubernetes (future use)
+# =========================
+*.kubeconfig
