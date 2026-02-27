@@ -12,24 +12,24 @@ import (
 type Transaction struct {
 	SenderID  string `json:"sender_id"`
 	PublicKey []byte `json:"public_key"`
+	Algorithm string `json:"algorithm"`
 	DataHash  string `json:"data_hash"`
 	Metadata  string `json:"metadata"`
 	Timestamp int64  `json:"timestamp"`
 	Signature []byte `json:"signature"`
 }
 
-// NewTransaction binds transaction to a specific identity
 func NewTransaction(node *identity.NodeIdentity, dataHash, metadata string) *Transaction {
 	return &Transaction{
 		SenderID:  node.NodeID,
 		PublicKey: node.PublicKey,
+		Algorithm: node.Algorithm(),
 		DataHash:  dataHash,
 		Metadata:  metadata,
 		Timestamp: time.Now().Unix(),
 	}
 }
 
-// computePayloadHash hashes all canonical transaction fields except signature
 func (tx *Transaction) computePayloadHash() ([]byte, error) {
 	if tx.SenderID == "" || tx.DataHash == "" {
 		return nil, errors.New("invalid transaction fields")
@@ -38,12 +38,14 @@ func (tx *Transaction) computePayloadHash() ([]byte, error) {
 	payload := struct {
 		SenderID  string `json:"sender_id"`
 		PublicKey []byte `json:"public_key"`
+		Algorithm string `json:"algorithm"`
 		DataHash  string `json:"data_hash"`
 		Metadata  string `json:"metadata"`
 		Timestamp int64  `json:"timestamp"`
 	}{
 		SenderID:  tx.SenderID,
 		PublicKey: tx.PublicKey,
+		Algorithm: tx.Algorithm,
 		DataHash:  tx.DataHash,
 		Metadata:  tx.Metadata,
 		Timestamp: tx.Timestamp,
@@ -57,12 +59,10 @@ func (tx *Transaction) computePayloadHash() ([]byte, error) {
 	return crypto.Hash(bytes), nil
 }
 
-// Hash exposes deterministic payload hash (for Merkle usage)
 func (tx *Transaction) Hash() ([]byte, error) {
 	return tx.computePayloadHash()
 }
 
-// SignWithIdentity signs transaction using node private key
 func (tx *Transaction) SignWithIdentity(node *identity.NodeIdentity) error {
 	hash, err := tx.computePayloadHash()
 	if err != nil {
@@ -78,8 +78,11 @@ func (tx *Transaction) SignWithIdentity(node *identity.NodeIdentity) error {
 	return nil
 }
 
-// Verify verifies transaction signature using its own public key
 func (tx *Transaction) Verify(signer crypto.Signer) (bool, error) {
+	if tx.Algorithm != signer.Algorithm() {
+		return false, errors.New("algorithm mismatch")
+	}
+
 	hash, err := tx.computePayloadHash()
 	if err != nil {
 		return false, err

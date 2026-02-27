@@ -5,8 +5,6 @@ import (
 	"crypto/rand"
 )
 
-// Ed25519Signer is a temporary development signer.
-// This will be replaced with Dilithium in production.
 type Ed25519Signer struct{}
 
 func (e *Ed25519Signer) GenerateKeyPair() ([]byte, []byte, error) {
@@ -23,4 +21,8 @@ func (e *Ed25519Signer) Sign(privateKey []byte, message []byte) ([]byte, error) 
 func (e *Ed25519Signer) Verify(publicKey []byte, message []byte, signature []byte) bool {
 	pub := ed25519.PublicKey(publicKey)
 	return ed25519.Verify(pub, message, signature)
+}
+
+func (e *Ed25519Signer) Algorithm() string {
+	return "ed25519"
 }
