@@ -4,86 +4,137 @@ import (
 	"testing"
 
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/block"
+	"github.com/Sai-shashank-2005/aegisq-protocol/core/consensus"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/crypto"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/identity"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/transaction"
 )
 
-func createBlock(index int, prevHash []byte, node *identity.NodeIdentity) *block.Block {
-	tx := transaction.NewTransaction(node, "data", "meta")
-	tx.SignWithIdentity(node)
+func setupLedger(t *testing.T) (*Ledger, *identity.NodeIdentity, crypto.Signer) {
 
-	b := block.NewBlock(index, prevHash, []*transaction.Transaction{tx})
-	b.Finalize(node)
+	signer := &crypto.Ed25519Signer{}
 
-	return b
+	node, err := identity.NewNodeIdentity("validator-1", signer)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	vs := consensus.NewValidatorSet()
+	vs.AddValidator("validator-1", node.PublicKey)
+
+	// Genesis block must contain at least one transaction
+	tx := createDummyTransaction(t, node)
+
+	genesis := block.NewBlock(0, []byte("genesis"), []*transaction.Transaction{tx})
+	if err := genesis.Finalize(node); err != nil {
+		t.Fatal(err)
+	}
+
+	ledger := NewLedger(genesis, vs)
+
+	return ledger, node, signer
+}
+
+func createDummyTransaction(t *testing.T, node *identity.NodeIdentity) *transaction.Transaction {
+
+	tx := transaction.NewTransaction(
+		node,
+		"dummy_payload",
+		"test_data",
+	)
+
+	err := tx.SignWithIdentity(node)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return tx
 }
 
 func TestLedgerAddBlock(t *testing.T) {
 
-	signer := &crypto.Ed25519Signer{}
-	node, _ := identity.NewNodeIdentity("validator-1", signer)
+	ledger, node, signer := setupLedger(t)
 
-	genesis := createBlock(0, []byte("genesis"), node)
+	tx := createDummyTransaction(t, node)
 
-	ledger := NewLedger(genesis)
+	newBlock := block.NewBlock(
+		1,
+		ledger.GetLastBlock().Hash,
+		[]*transaction.Transaction{tx},
+	)
 
-	block1 := createBlock(1, genesis.Hash, node)
+	if err := newBlock.Finalize(node); err != nil {
+		t.Fatal(err)
+	}
 
-	err := ledger.AddBlock(block1, signer, node.PublicKey)
-	if err != nil {
-		t.Fatal("Failed to add valid block")
+	if err := ledger.AddBlock(newBlock, signer, node.PublicKey); err != nil {
+		t.Fatal("Failed to add valid block:", err)
 	}
 }
 
 func TestLedgerRejectWrongIndex(t *testing.T) {
 
-	signer := &crypto.Ed25519Signer{}
-	node, _ := identity.NewNodeIdentity("validator-1", signer)
+	ledger, node, signer := setupLedger(t)
 
-	genesis := createBlock(0, []byte("genesis"), node)
-	ledger := NewLedger(genesis)
+	tx := createDummyTransaction(t, node)
 
-	blockWrong := createBlock(5, genesis.Hash, node)
+	newBlock := block.NewBlock(
+		2, // wrong index
+		ledger.GetLastBlock().Hash,
+		[]*transaction.Transaction{tx},
+	)
 
-	err := ledger.AddBlock(blockWrong, signer, node.PublicKey)
-	if err == nil {
-		t.Fatal("Ledger accepted block with wrong index")
+	if err := newBlock.Finalize(node); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ledger.AddBlock(newBlock, signer, node.PublicKey); err == nil {
+		t.Fatal("Block with wrong index should fail")
 	}
 }
 
 func TestLedgerRejectWrongPreviousHash(t *testing.T) {
 
-	signer := &crypto.Ed25519Signer{}
-	node, _ := identity.NewNodeIdentity("validator-1", signer)
+	ledger, node, signer := setupLedger(t)
 
-	genesis := createBlock(0, []byte("genesis"), node)
-	ledger := NewLedger(genesis)
+	tx := createDummyTransaction(t, node)
 
-	blockWrong := createBlock(1, []byte("fakehash"), node)
+	newBlock := block.NewBlock(
+		1,
+		[]byte("wrong_hash"),
+		[]*transaction.Transaction{tx},
+	)
 
-	err := ledger.AddBlock(blockWrong, signer, node.PublicKey)
-	if err == nil {
-		t.Fatal("Ledger accepted block with wrong previous hash")
+	if err := newBlock.Finalize(node); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ledger.AddBlock(newBlock, signer, node.PublicKey); err == nil {
+		t.Fatal("Block with wrong previous hash should fail")
 	}
 }
 
 func TestLedgerValidateChain(t *testing.T) {
 
-	signer := &crypto.Ed25519Signer{}
-	node, _ := identity.NewNodeIdentity("validator-1", signer)
+	ledger, node, signer := setupLedger(t)
 
-	genesis := createBlock(0, []byte("genesis"), node)
-	ledger := NewLedger(genesis)
+	tx := createDummyTransaction(t, node)
 
-	block1 := createBlock(1, genesis.Hash, node)
-	ledger.AddBlock(block1, signer, node.PublicKey)
+	newBlock := block.NewBlock(
+		1,
+		ledger.GetLastBlock().Hash,
+		[]*transaction.Transaction{tx},
+	)
 
-	block2 := createBlock(2, block1.Hash, node)
-	ledger.AddBlock(block2, signer, node.PublicKey)
+	if err := newBlock.Finalize(node); err != nil {
+		t.Fatal(err)
+	}
 
-	err := ledger.ValidateChain(signer, node.PublicKey)
-	if err != nil {
-		t.Fatal("Valid chain rejected")
+	if err := ledger.AddBlock(newBlock, signer, node.PublicKey); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ledger.ValidateChain(signer); err != nil {
+		t.Fatal("Chain validation failed:", err)
 	}
 }
