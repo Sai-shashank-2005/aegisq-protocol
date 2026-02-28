@@ -22,10 +22,16 @@ func setupLedger(t *testing.T) (*Ledger, *identity.NodeIdentity, crypto.Signer) 
 	vs := consensus.NewValidatorSet()
 	vs.AddValidator("validator-1", node.PublicKey)
 
-	// Genesis block must contain at least one transaction
+	// Genesis must contain at least one transaction
 	tx := createDummyTransaction(t, node)
 
-	genesis := block.NewBlock(0, []byte("genesis"), []*transaction.Transaction{tx})
+	genesis := block.NewBlock(
+		0,  // height
+		0,  // view
+		[]byte("genesis"),
+		[]*transaction.Transaction{tx},
+	)
+
 	if err := genesis.Finalize(node); err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +64,8 @@ func TestLedgerAddBlock(t *testing.T) {
 	tx := createDummyTransaction(t, node)
 
 	newBlock := block.NewBlock(
-		1,
+		1, // height
+		0, // view
 		ledger.GetLastBlock().Hash,
 		[]*transaction.Transaction{tx},
 	)
@@ -79,7 +86,8 @@ func TestLedgerRejectWrongIndex(t *testing.T) {
 	tx := createDummyTransaction(t, node)
 
 	newBlock := block.NewBlock(
-		2, // wrong index
+		2, // wrong height
+		0, // view
 		ledger.GetLastBlock().Hash,
 		[]*transaction.Transaction{tx},
 	)
@@ -101,6 +109,7 @@ func TestLedgerRejectWrongPreviousHash(t *testing.T) {
 
 	newBlock := block.NewBlock(
 		1,
+		0,
 		[]byte("wrong_hash"),
 		[]*transaction.Transaction{tx},
 	)
@@ -122,6 +131,7 @@ func TestLedgerValidateChain(t *testing.T) {
 
 	newBlock := block.NewBlock(
 		1,
+		0,
 		ledger.GetLastBlock().Hash,
 		[]*transaction.Transaction{tx},
 	)

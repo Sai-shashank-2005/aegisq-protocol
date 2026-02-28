@@ -16,24 +16,28 @@ func TestRoundRobinRotation(t *testing.T) {
 
 	s := NewRoundRobinScheduler(vs)
 
-	tests := map[int]string{
-		0: "A",
-		1: "B",
-		2: "C",
-		3: "A",
-		4: "B",
-		5: "C",
+	tests := []struct {
+		height   int
+		view     int
+		expected string
+	}{
+		{0, 0, "A"},
+		{1, 0, "B"},
+		{2, 0, "C"},
+		{3, 0, "A"},
+		{1, 1, "C"}, // failover
+		{1, 2, "A"}, // next failover
 	}
 
-	for index, expected := range tests {
+	for _, test := range tests {
 
-		leader, err := s.GetLeader(index)
+		leader, err := s.GetLeader(test.height, test.view)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if leader != expected {
-			t.Fatalf("expected %s, got %s", expected, leader)
+		if leader != test.expected {
+			t.Fatalf("expected %s, got %s", test.expected, leader)
 		}
 	}
 }

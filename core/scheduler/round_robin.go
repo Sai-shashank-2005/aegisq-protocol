@@ -13,9 +13,7 @@ type RoundRobinScheduler struct {
 
 func NewRoundRobinScheduler(vs *consensus.ValidatorSet) *RoundRobinScheduler {
 
-	// Extract NodeIDs deterministically
 	ids := vs.GetValidatorIDs()
-
 	sort.Strings(ids)
 
 	return &RoundRobinScheduler{
@@ -23,14 +21,13 @@ func NewRoundRobinScheduler(vs *consensus.ValidatorSet) *RoundRobinScheduler {
 	}
 }
 
-// GetLeader returns expected leader for block height
-func (r *RoundRobinScheduler) GetLeader(blockIndex int) (string, error) {
+func (r *RoundRobinScheduler) GetLeader(height int, view int) (string, error) {
 
 	if len(r.orderedValidators) == 0 {
 		return "", errors.New("no validators registered")
 	}
 
-	pos := blockIndex % len(r.orderedValidators)
+	pos := (height + view) % len(r.orderedValidators)
 
 	return r.orderedValidators[pos], nil
 }
