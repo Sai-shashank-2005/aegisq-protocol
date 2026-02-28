@@ -6,7 +6,7 @@ import (
 )
 
 /*
-Layer 9 — BFT Voting Engine
+Layer 9 — Hardened BFT Voting Engine
 
 Implements:
 
@@ -14,6 +14,7 @@ Implements:
 ✔ COMMIT phase
 ✔ 2f+1 quorum logic
 ✔ Double-vote prevention
+✔ Equivocation prevention (strict)
 ✔ View-aware voting
 */
 
@@ -37,12 +38,17 @@ type VotePool struct {
 	// blockHash -> view -> voteType -> validatorID -> bool
 	votes map[string]map[int]map[VoteType]map[string]bool
 
+	// NEW: strict equivocation tracking
+	// view -> voteType -> validatorID -> blockHash
+	seenVotes map[int]map[VoteType]map[string]string
+
 	validatorSet *ValidatorSet
 }
 
 func NewVotePool(vs *ValidatorSet) *VotePool {
 	return &VotePool{
 		votes:        make(map[string]map[int]map[VoteType]map[string]bool),
+		seenVotes:    make(map[int]map[VoteType]map[string]string),
 		validatorSet: vs,
 	}
 }
@@ -52,16 +58,39 @@ AddVote registers a vote if valid.
 
 Enforces:
 ✔ Validator must be authorized
-✔ No double voting
+✔ No double voting (same block)
+✔ No equivocation (different block same view)
 */
 func (vp *VotePool) AddVote(v Vote) error {
 	vp.mu.Lock()
 	defer vp.mu.Unlock()
 
+	// 1️⃣ Authorization check
 	if _, exists := vp.validatorSet.GetValidator(v.ValidatorID); !exists {
 		return errors.New("unauthorized validator")
 	}
 
+	// 2️⃣ Initialize seenVotes structure
+	if _, ok := vp.seenVotes[v.View]; !ok {
+		vp.seenVotes[v.View] = make(map[VoteType]map[string]string)
+	}
+
+	if _, ok := vp.seenVotes[v.View][v.Type]; !ok {
+		vp.seenVotes[v.View][v.Type] = make(map[string]string)
+	}
+
+	// 3️⃣ Equivocation prevention
+	if existingHash, voted := vp.seenVotes[v.View][v.Type][v.ValidatorID]; voted {
+		if existingHash == v.BlockHash {
+			return errors.New("double vote detected")
+		}
+		return errors.New("equivocation detected")
+	}
+
+	// Record seen vote globally
+	vp.seenVotes[v.View][v.Type][v.ValidatorID] = v.BlockHash
+
+	// 4️⃣ Store vote per block
 	if _, ok := vp.votes[v.BlockHash]; !ok {
 		vp.votes[v.BlockHash] = make(map[int]map[VoteType]map[string]bool)
 	}
@@ -74,11 +103,8 @@ func (vp *VotePool) AddVote(v Vote) error {
 		vp.votes[v.BlockHash][v.View][v.Type] = make(map[string]bool)
 	}
 
-	if vp.votes[v.BlockHash][v.View][v.Type][v.ValidatorID] {
-		return errors.New("double vote detected")
-	}
-
 	vp.votes[v.BlockHash][v.View][v.Type][v.ValidatorID] = true
+
 	return nil
 }
 
