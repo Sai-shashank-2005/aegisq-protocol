@@ -12,6 +12,7 @@ import (
 
 type Block struct {
 	Index        int
+	View         int
 	Timestamp    int64
 	PreviousHash []byte
 	MerkleRoot   []byte
@@ -21,9 +22,10 @@ type Block struct {
 	Signature    []byte
 }
 
-func NewBlock(index int, prevHash []byte, txs []*transaction.Transaction) *Block {
+func NewBlock(index int, view int, prevHash []byte, txs []*transaction.Transaction) *Block {
 	return &Block{
 		Index:        index,
+		View:         view,
 		Timestamp:    time.Now().Unix(),
 		PreviousHash: prevHash,
 		Transactions: txs,
@@ -31,17 +33,20 @@ func NewBlock(index int, prevHash []byte, txs []*transaction.Transaction) *Block
 }
 
 func (b *Block) computeBlockHash() ([]byte, error) {
+
 	if b.MerkleRoot == nil {
 		return nil, errors.New("merkle root not set")
 	}
 
 	header := struct {
 		Index        int
+		View         int
 		Timestamp    int64
 		PreviousHash []byte
 		MerkleRoot   []byte
 	}{
 		Index:        b.Index,
+		View:         b.View,
 		Timestamp:    b.Timestamp,
 		PreviousHash: b.PreviousHash,
 		MerkleRoot:   b.MerkleRoot,
@@ -56,6 +61,7 @@ func (b *Block) computeBlockHash() ([]byte, error) {
 }
 
 func (b *Block) Finalize(node *identity.NodeIdentity) error {
+
 	if len(b.Transactions) == 0 {
 		return errors.New("block must contain transactions")
 	}
@@ -86,19 +92,20 @@ func (b *Block) Finalize(node *identity.NodeIdentity) error {
 	}
 
 	b.Signature = signature
+
 	return nil
 }
 
-func (b *Block) Verify(signer crypto.Signer, validatorPublicKey []byte) (bool, error) {
+func (b *Block) Verify(signer crypto.Signer, publicKey []byte) (bool, error) {
 
 	if b.Hash == nil {
 		return false, errors.New("block hash missing")
 	}
 
-	// 1️⃣ Verify every transaction signature
+	// 1️⃣ Verify each transaction signature
 	for _, tx := range b.Transactions {
-		validTx, err := tx.Verify(signer)
-		if err != nil || !validTx {
+		valid, err := tx.Verify(signer)
+		if err != nil || !valid {
 			return false, nil
 		}
 	}
@@ -113,9 +120,9 @@ func (b *Block) Verify(signer crypto.Signer, validatorPublicKey []byte) (bool, e
 		txHashes = append(txHashes, hash)
 	}
 
-	recomputedMerkle := ComputeMerkleRoot(txHashes)
+	expectedMerkle := ComputeMerkleRoot(txHashes)
 
-	if string(recomputedMerkle) != string(b.MerkleRoot) {
+	if string(expectedMerkle) != string(b.MerkleRoot) {
 		return false, nil
 	}
 
@@ -130,5 +137,5 @@ func (b *Block) Verify(signer crypto.Signer, validatorPublicKey []byte) (bool, e
 	}
 
 	// 4️⃣ Verify block signature
-	return signer.Verify(validatorPublicKey, b.Hash, b.Signature), nil
+	return signer.Verify(publicKey, b.Hash, b.Signature), nil
 }

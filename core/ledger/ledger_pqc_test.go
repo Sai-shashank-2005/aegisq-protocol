@@ -28,7 +28,7 @@ func TestFullChainWithDilithium(t *testing.T) {
 	vs := consensus.NewValidatorSet()
 	vs.AddValidator("validator-1", node.PublicKey)
 
-	// --- Genesis block must contain a transaction ---
+	// --- Genesis block ---
 	genesisTx := transaction.NewTransaction(
 		node,
 		"genesis_payload",
@@ -40,7 +40,8 @@ func TestFullChainWithDilithium(t *testing.T) {
 	}
 
 	genesis := block.NewBlock(
-		0,
+		0,   // height
+		0,   // view
 		[]byte("genesis"),
 		[]*transaction.Transaction{genesisTx},
 	)
@@ -51,7 +52,7 @@ func TestFullChainWithDilithium(t *testing.T) {
 
 	ledger := NewLedger(genesis, vs)
 
-	// --- Create next block with transaction ---
+	// --- Next block ---
 	tx := transaction.NewTransaction(
 		node,
 		"block_payload",
@@ -63,8 +64,9 @@ func TestFullChainWithDilithium(t *testing.T) {
 	}
 
 	newBlock := block.NewBlock(
-		1,
-		genesis.Hash,
+		1,            // height
+		0,            // view
+		genesis.Hash, // prev hash
 		[]*transaction.Transaction{tx},
 	)
 
