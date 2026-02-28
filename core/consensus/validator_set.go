@@ -61,3 +61,14 @@ func (v *ValidatorSet) GetValidator(nodeID string) ([]byte, bool) {
 func (v *ValidatorSet) Count() int {
 	return len(v.validators)
 }
+
+func (v *ValidatorSet) GetValidatorIDs() []string {
+
+	ids := make([]string, 0, len(v.validators))
+
+	for id := range v.validators {
+		ids = append(ids, id)
+	}
+
+	return ids
+}

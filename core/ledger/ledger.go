@@ -6,58 +6,66 @@ import (
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/block"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/consensus"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/crypto"
+	"github.com/Sai-shashank-2005/aegisq-protocol/core/scheduler"
 )
 
 /*
 Ledger represents the blockchain state container.
 
-It maintains:
-- Ordered list of blocks
-- Validator authorization set (Layer 6 governance enforcement)
+Maintains:
+✔ Ordered list of blocks
+✔ Validator authorization set
+✔ Deterministic leader scheduler (Layer 7)
 
 Security Guarantees:
 ✔ Sequential block ordering
 ✔ Hash chain integrity
 ✔ Cryptographic block verification
 ✔ Validator authorization enforcement
+✔ Deterministic leader enforcement
 */
 type Ledger struct {
 	Blocks       []*block.Block
 	ValidatorSet *consensus.ValidatorSet
+	Scheduler    *scheduler.RoundRobinScheduler
 }
 
 /*
-NewLedger initializes a new ledger instance.
+NewLedger initializes ledger with:
 
-- Requires a genesis block
-- Requires a ValidatorSet (authorization layer)
+- Genesis block
+- Validator set
+- Round-robin scheduler
 */
 func NewLedger(genesis *block.Block, vs *consensus.ValidatorSet) *Ledger {
+
+	s := scheduler.NewRoundRobinScheduler(vs)
+
 	return &Ledger{
 		Blocks:       []*block.Block{genesis},
 		ValidatorSet: vs,
+		Scheduler:    s,
 	}
 }
 
 /*
-GetLastBlock returns the most recent block in the chain.
+GetLastBlock returns the most recent block.
 */
 func (l *Ledger) GetLastBlock() *block.Block {
 	return l.Blocks[len(l.Blocks)-1]
 }
 
 /*
-AddBlock performs full validation before appending a block.
+AddBlock performs strict validation before appending.
 
 Validation Steps:
 
 1️⃣ Enforce sequential index
 2️⃣ Enforce previous hash linkage
-3️⃣ Verify block cryptographic integrity
+3️⃣ Enforce deterministic leader schedule (Layer 7)
 4️⃣ Enforce validator authorization (Layer 6)
-5️⃣ Prevent duplicate block insertion
-
-Only if ALL checks pass → block is appended.
+5️⃣ Verify block cryptographic integrity
+6️⃣ Prevent duplicate block insertion
 */
 func (l *Ledger) AddBlock(
 	b *block.Block,
@@ -77,45 +85,50 @@ func (l *Ledger) AddBlock(
 		return errors.New("invalid previous hash linkage")
 	}
 
-	// 3️⃣ Verify block cryptographic integrity
+	// 3️⃣ Enforce deterministic leader schedule
+	expectedLeader, err := l.Scheduler.GetLeader(b.Index)
+	if err != nil {
+		return err
+	}
+
+	if b.Validator != expectedLeader {
+		return errors.New("block produced by wrong scheduled validator")
+	}
+
+	// 4️⃣ Enforce validator authorization
+	if !l.ValidatorSet.IsAuthorized(b.Validator, validatorPubKey) {
+		return errors.New("validator not authorized")
+	}
+
+	// 5️⃣ Verify cryptographic integrity
 	valid, err := b.Verify(signer, validatorPubKey)
 	if err != nil || !valid {
 		return errors.New("block verification failed")
 	}
 
-	// 4️⃣ Enforce validator authorization (NEW LAYER 6)
-	// Ensure the validator is registered and public key matches
-	if !l.ValidatorSet.IsAuthorized(b.Validator, validatorPubKey) {
-		return errors.New("validator not authorized")
-	}
-
-	// 5️⃣ Prevent duplicate block hash insertion
+	// 6️⃣ Prevent duplicate block hash insertion
 	for _, existing := range l.Blocks {
 		if string(existing.Hash) == string(b.Hash) {
 			return errors.New("duplicate block detected")
 		}
 	}
 
-	// All validations passed → append block
+	// Append block
 	l.Blocks = append(l.Blocks, b)
 
 	return nil
 }
 
 /*
-ValidateChain performs a full chain traversal and validation.
+ValidateChain performs full-chain validation.
 
 Checks:
 
 ✔ Index continuity
 ✔ Previous hash linkage
-✔ Cryptographic block validity
-✔ Validator authorization for each block
-
-Used for:
-- Node sync
-- Startup verification
-- Chain audit
+✔ Deterministic leader correctness
+✔ Validator authorization
+✔ Cryptographic integrity
 */
 func (l *Ledger) ValidateChain(
 	signer crypto.Signer,
@@ -126,23 +139,33 @@ func (l *Ledger) ValidateChain(
 		current := l.Blocks[i]
 		prev := l.Blocks[i-1]
 
-		// Check index continuity
+		// Index continuity
 		if current.Index != prev.Index+1 {
 			return errors.New("chain index broken")
 		}
 
-		// Check previous hash linkage
+		// Previous hash linkage
 		if string(current.PreviousHash) != string(prev.Hash) {
 			return errors.New("chain previous hash broken")
 		}
 
-		// Retrieve registered validator public key
+		// Deterministic leader enforcement
+		expectedLeader, err := l.Scheduler.GetLeader(current.Index)
+		if err != nil {
+			return err
+		}
+
+		if current.Validator != expectedLeader {
+			return errors.New("invalid leader at block height")
+		}
+
+		// Validator must exist
 		validatorKey, exists := l.ValidatorSet.GetValidator(current.Validator)
 		if !exists {
 			return errors.New("block signed by unknown validator")
 		}
 
-		// Verify cryptographic integrity using registered key
+		// Cryptographic verification
 		valid, err := current.Verify(signer, validatorKey)
 		if err != nil || !valid {
 			return errors.New("block verification failed")
