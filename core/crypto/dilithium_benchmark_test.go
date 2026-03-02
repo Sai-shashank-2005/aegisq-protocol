@@ -3,37 +3,70 @@ package crypto
 import "testing"
 
 func BenchmarkDilithiumKeyGen(b *testing.B) {
-	signer, _ := NewDilithiumSigner()
+	signer, err := NewDilithiumSigner()
+	if err != nil {
+		b.Fatal(err)
+	}
 	defer signer.Close()
 
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		signer.GenerateKeyPair()
+		_, _, err := signer.GenerateKeyPair()
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkDilithiumSign(b *testing.B) {
-	signer, _ := NewDilithiumSigner()
+	signer, err := NewDilithiumSigner()
+	if err != nil {
+		b.Fatal(err)
+	}
 	defer signer.Close()
 
-	_, priv, _ := signer.GenerateKeyPair()
+	_, priv, err := signer.GenerateKeyPair()
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	msg := []byte("Benchmark Message")
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		signer.Sign(priv, msg)
+		_, err := signer.Sign(priv, msg)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
 func BenchmarkDilithiumVerify(b *testing.B) {
-	signer, _ := NewDilithiumSigner()
+	signer, err := NewDilithiumSigner()
+	if err != nil {
+		b.Fatal(err)
+	}
 	defer signer.Close()
 
-	pub, priv, _ := signer.GenerateKeyPair()
+	pub, priv, err := signer.GenerateKeyPair()
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	msg := []byte("Benchmark Message")
-	sig, _ := signer.Sign(priv, msg)
+
+	sig, err := signer.Sign(priv, msg)
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
-		signer.Verify(pub, msg, sig)
+		if !signer.Verify(pub, msg, sig) {
+			b.Fatal("verify failed")
+		}
 	}
 }
