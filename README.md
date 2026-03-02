@@ -18,7 +18,7 @@ It serves as a secure, modular foundation for post-quantum data anchoring system
 * Strict Equivocation Prevention
 * Immediate Finality Guarantees
 * Fork Resistance
-* Post-Quantum Cryptography Integration Ready
+* Post-Quantum Cryptography Integration
 * IPFS Storage Layer Ready
 
 This repository contains the **core consensus and ledger engine**.
@@ -29,18 +29,18 @@ This repository contains the **core consensus and ledger engine**.
 
 AegisQ follows a strictly modular layered architecture:
 
-| Layer | Component            | Responsibility                  |
-| ----- | -------------------- | ------------------------------- |
-| 1     | Crypto (PQC-Ready)   | Dilithium / Ed25519 abstraction |
-| 2     | Identity             | Node identity & signing         |
-| 3     | Transactions         | Signed metadata transactions    |
-| 4     | Blocks               | Merkle-rooted signed blocks     |
-| 5     | Ledger               | Chain integrity enforcement     |
-| 6     | Validator Governance | Authorization & membership      |
-| 7     | Deterministic Leader | Round-robin proposer            |
-| 8     | View-Based Failover  | Leader rotation logic           |
-| 9     | BFT Voting           | 2f+1 quorum enforcement         |
-| 10    | Finality Engine      | Fork prevention & commit lock   |
+| Layer | Component            | Responsibility                |
+| ----- | -------------------- | ----------------------------- |
+| 1     | Crypto (PQC-Ready)   | Dilithium / ECDSA abstraction |
+| 2     | Identity             | Node identity & signing       |
+| 3     | Transactions         | Signed metadata transactions  |
+| 4     | Blocks               | Merkle-rooted signed blocks   |
+| 5     | Ledger               | Chain integrity enforcement   |
+| 6     | Validator Governance | Authorization & membership    |
+| 7     | Deterministic Leader | Round-robin proposer          |
+| 8     | View-Based Failover  | Leader rotation logic         |
+| 9     | BFT Voting           | 2f+1 quorum enforcement       |
+| 10    | Finality Engine      | Fork prevention & commit lock |
 
 Each layer is independently testable and designed for long-term extensibility.
 
@@ -94,12 +94,138 @@ No reorg assumptions.
 | 10,000       | ~107ms        | ~1.7s                |
 | 50,000       | ~540ms        | ~8.7s                |
 
-**Observations**
+### Observations
 
 * Linear scalability
 * Merkle hashing dominates compute cost
 * Consensus overhead remains minimal
 * No fork under tolerated Byzantine conditions
+
+---
+
+# Cryptographic Benchmark Results
+
+AegisQ includes both classical and post-quantum signature implementations for performance comparison and migration readiness.
+
+Benchmarks were executed using Go’s testing framework on:
+
+* **CPU:** 13th Gen Intel® Core™ i7-13620H
+* **OS:** Linux amd64
+* **Package:** `core/crypto`
+
+---
+
+## Benchmark Command
+
+```bash
+go test ./core/crypto -bench=. -benchmem -run=^$
+```
+
+---
+
+## Benchmark Environment
+
+```
+goos: linux
+goarch: amd64
+cpu: 13th Gen Intel(R) Core(TM) i7-13620H
+pkg: github.com/Sai-shashank-2005/aegisq-protocol/core/crypto
+```
+
+---
+
+## Benchmark Results
+
+```
+BenchmarkDilithiumKeyGen-16        30282    38682 ns/op    4096 B/op    2 allocs/op
+BenchmarkDilithiumSign-16          11571   104051 ns/op    2696 B/op    2 allocs/op
+BenchmarkDilithiumVerify-16        31044    37893 ns/op       0 B/op    0 allocs/op
+
+BenchmarkECDSAKeyGen-16            52716    22555 ns/op    1304 B/op   21 allocs/op
+BenchmarkECDSASign-16              16744    71969 ns/op    7135 B/op   82 allocs/op
+BenchmarkECDSAVerify-16             9475   109940 ns/op    1504 B/op   29 allocs/op
+```
+
+---
+
+## Performance Analysis
+
+### Verification (Validator-Critical Path)
+
+| Algorithm             | Verify Time | Allocations |
+| --------------------- | ----------- | ----------- |
+| Dilithium (ML-DSA-44) | **37.8 µs** | 0           |
+| ECDSA P-256           | 109.9 µs    | 29          |
+
+Dilithium verification is approximately **3× faster** than ECDSA under this hardware configuration.
+
+Since validators predominantly perform signature verification rather than signing, this significantly improves consensus throughput.
+
+---
+
+### Signing
+
+| Algorithm   | Sign Time |
+| ----------- | --------- |
+| ECDSA P-256 | 71.9 µs   |
+| Dilithium   | 104 µs    |
+
+ECDSA is faster at signing (~1.4×).
+Signing is typically client-side and not validator critical.
+
+---
+
+### Key Generation
+
+| Algorithm | KeyGen Time |
+| --------- | ----------- |
+| ECDSA     | 22.5 µs     |
+| Dilithium | 38.6 µs     |
+
+ECDSA generates keys faster, as expected from classical elliptic curve cryptography.
+
+---
+
+## Memory Behavior
+
+Dilithium verification performs:
+
+```
+0 B/op
+0 allocs/op
+```
+
+This indicates:
+
+* Zero heap pressure
+* Predictable GC behavior
+* Deterministic runtime characteristics
+
+ECDSA verification involves internal `big.Int` allocations.
+
+---
+
+## Throughput Estimation
+
+Dilithium Verify ≈ 37,893 ns ≈ 0.038 ms
+
+Theoretical single-core ceiling:
+
+```
+~26,000 verifications / second
+```
+
+On multi-core systems, throughput scales with parallel validation.
+
+---
+
+## Cryptographic Design Implication
+
+These results demonstrate:
+
+* Post-quantum cryptography is production viable.
+* Verification-heavy workloads benefit from Dilithium.
+* AegisQ’s crypto layer is forward-compatible without sacrificing validator performance.
 
 ---
 
@@ -141,9 +267,17 @@ git clone https://github.com/<your-username>/aegisq-protocol.git
 cd aegisq-protocol
 ```
 
+Run all tests:
+
 ```bash
 go clean -cache -testcache
 go test ./... -v
+```
+
+Run cryptographic benchmarks:
+
+```bash
+go test ./core/crypto -bench=. -benchmem -run=^$
 ```
 
 ---
