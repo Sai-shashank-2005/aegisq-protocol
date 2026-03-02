@@ -19,7 +19,7 @@ type DilithiumSigner struct {
 // Constructor
 func NewDilithiumSigner() (*DilithiumSigner, error) {
 
-	name := C.CString("Dilithium2")
+	name := C.CString("ML-DSA-44")
 	defer C.free(unsafe.Pointer(name))
 
 	alg := C.OQS_SIG_new(name)
