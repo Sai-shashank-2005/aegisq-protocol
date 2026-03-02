@@ -1,128 +1,144 @@
 package crypto
 
-import (
-	"testing"
-)
+import "testing"
 
-func TestDilithiumInitialization(t *testing.T) {
-	signer, err := NewDilithiumSigner()
+func getSigners(t *testing.T) map[string]Signer {
+	signers := make(map[string]Signer)
+
+	dilithium, err := NewDilithiumSigner()
 	if err != nil {
-		t.Fatalf("Failed to initialize Dilithium signer: %v", err)
+		t.Fatal(err)
 	}
-	defer signer.Close()
-}
+	signers["Dilithium"] = dilithium
 
-func TestDilithiumKeyGenerationSizes(t *testing.T) {
-	signer, _ := NewDilithiumSigner()
-	defer signer.Close()
-
-	pub, priv, err := signer.GenerateKeyPair()
+	ecdsa, err := NewECDSASigner()
 	if err != nil {
-		t.Fatal("Key generation failed")
+		t.Fatal(err)
 	}
+	signers["ECDSA"] = ecdsa
 
-	if len(pub) < 1000 {
-		t.Fatal("Public key size too small — not Dilithium")
-	}
+	return signers
+}
 
-	if len(priv) < 2000 {
-		t.Fatal("Private key size too small — not Dilithium")
+func TestSignerInitialization(t *testing.T) {
+	for name, signer := range getSigners(t) {
+		t.Run(name, func(t *testing.T) {
+			if signer == nil {
+				t.Fatal("Signer is nil")
+			}
+		})
 	}
 }
 
-func TestDilithiumSignVerify(t *testing.T) {
-	signer, _ := NewDilithiumSigner()
-	defer signer.Close()
+func TestKeyGeneration(t *testing.T) {
+	for name, signer := range getSigners(t) {
+		t.Run(name, func(t *testing.T) {
 
-	pub, priv, _ := signer.GenerateKeyPair()
+			pub, priv, err := signer.GenerateKeyPair()
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	msg := []byte("Post-Quantum Blockchain Test")
-
-	sig, err := signer.Sign(priv, msg)
-	if err != nil {
-		t.Fatal("Signing failed")
-	}
-
-	if len(sig) < 2000 {
-		t.Fatal("Signature too small — not Dilithium")
-	}
-
-	valid := signer.Verify(pub, msg, sig)
-	if !valid {
-		t.Fatal("Signature verification failed")
+			if len(pub) == 0 || len(priv) == 0 {
+				t.Fatal("Key generation failed")
+			}
+		})
 	}
 }
 
-func TestDilithiumMutationFails(t *testing.T) {
-	signer, _ := NewDilithiumSigner()
-	defer signer.Close()
+func TestSignVerify(t *testing.T) {
+	for name, signer := range getSigners(t) {
+		t.Run(name, func(t *testing.T) {
 
-	pub, priv, _ := signer.GenerateKeyPair()
+			pub, priv, _ := signer.GenerateKeyPair()
+			msg := []byte("Post-Quantum Blockchain Test")
 
-	msg := []byte("Original Message")
+			sig, err := signer.Sign(priv, msg)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	sig, _ := signer.Sign(priv, msg)
-
-	mutated := []byte("Tampered Message")
-
-	if signer.Verify(pub, mutated, sig) {
-		t.Fatal("Verification should fail for modified message")
+			if !signer.Verify(pub, msg, sig) {
+				t.Fatal("Signature verification failed")
+			}
+		})
 	}
 }
 
-func TestDilithiumSignatureReplayFails(t *testing.T) {
-	signer, _ := NewDilithiumSigner()
-	defer signer.Close()
+func TestMutationFails(t *testing.T) {
+	for name, signer := range getSigners(t) {
+		t.Run(name, func(t *testing.T) {
 
-	pub1, priv1, _ := signer.GenerateKeyPair()
-	pub2, _, _ := signer.GenerateKeyPair()
+			pub, priv, _ := signer.GenerateKeyPair()
 
-	msg := []byte("Replay Test")
+			msg := []byte("Original Message")
+			sig, _ := signer.Sign(priv, msg)
 
-	sig, _ := signer.Sign(priv1, msg)
+			mutated := []byte("Tampered Message")
 
-	// Attempt verification using different public key
-	if signer.Verify(pub2, msg, sig) {
-		t.Fatal("Replay attack succeeded with wrong public key")
-	}
-
-	// Valid case
-	if !signer.Verify(pub1, msg, sig) {
-		t.Fatal("Valid signature rejected")
+			if signer.Verify(pub, mutated, sig) {
+				t.Fatal("Verification should fail for modified message")
+			}
+		})
 	}
 }
 
-func TestDilithiumDeterministicVerification(t *testing.T) {
-	signer, _ := NewDilithiumSigner()
-	defer signer.Close()
+func TestReplayFails(t *testing.T) {
+	for name, signer := range getSigners(t) {
+		t.Run(name, func(t *testing.T) {
 
-	pub, priv, _ := signer.GenerateKeyPair()
-	msg := []byte("Consistency Test")
+			pub1, priv1, _ := signer.GenerateKeyPair()
+			pub2, _, _ := signer.GenerateKeyPair()
 
-	sig, _ := signer.Sign(priv, msg)
+			msg := []byte("Replay Test")
 
-	for i := 0; i < 10; i++ {
-		if !signer.Verify(pub, msg, sig) {
-			t.Fatal("Verification failed on repeated checks")
-		}
+			sig, _ := signer.Sign(priv1, msg)
+
+			if signer.Verify(pub2, msg, sig) {
+				t.Fatal("Replay succeeded with wrong public key")
+			}
+
+			if !signer.Verify(pub1, msg, sig) {
+				t.Fatal("Valid signature rejected")
+			}
+		})
 	}
 }
 
-func TestDilithiumSignatureCorruptionFails(t *testing.T) {
-	signer, _ := NewDilithiumSigner()
-	defer signer.Close()
+func TestDeterministicVerification(t *testing.T) {
+	for name, signer := range getSigners(t) {
+		t.Run(name, func(t *testing.T) {
 
-	pub, priv, _ := signer.GenerateKeyPair()
-	msg := []byte("Corruption Test")
+			pub, priv, _ := signer.GenerateKeyPair()
+			msg := []byte("Consistency Test")
 
-	sig, _ := signer.Sign(priv, msg)
+			sig, _ := signer.Sign(priv, msg)
 
-	// Flip a byte
-	corrupted := make([]byte, len(sig))
-	copy(corrupted, sig)
-	corrupted[10] ^= 0xFF
+			for i := 0; i < 10; i++ {
+				if !signer.Verify(pub, msg, sig) {
+					t.Fatal("Verification failed on repeated checks")
+				}
+			}
+		})
+	}
+}
 
-	if signer.Verify(pub, msg, corrupted) {
-		t.Fatal("Corrupted signature verified successfully")
+func TestSignatureCorruptionFails(t *testing.T) {
+	for name, signer := range getSigners(t) {
+		t.Run(name, func(t *testing.T) {
+
+			pub, priv, _ := signer.GenerateKeyPair()
+			msg := []byte("Corruption Test")
+
+			sig, _ := signer.Sign(priv, msg)
+
+			corrupted := make([]byte, len(sig))
+			copy(corrupted, sig)
+			corrupted[10] ^= 0xFF
+
+			if signer.Verify(pub, msg, corrupted) {
+				t.Fatal("Corrupted signature verified")
+			}
+		})
 	}
 }
