@@ -130,3 +130,6 @@ logs/
 # =========================
 *.cache
 .cache/
+
+*.db
+aegisq.db
