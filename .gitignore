@@ -8,23 +8,51 @@
 *.dylib
 *.test
 *.out
+*.prof
+*.pprof
+*.cover
+*.cov
 
-# Go build directories
+# Compiled binaries
+aegisqd
+*.bin
+
+# =========================
+# Go Build Directories
+# =========================
 /bin/
 /build/
 /dist/
+/release/
 
-# Go coverage
+# =========================
+# Go Coverage
+# =========================
 coverage.out
 coverage.html
+*.coverprofile
 
-# Go workspace (if used later)
+# =========================
+# Go Workspace
+# =========================
 go.work
+go.work.sum
 
 # =========================
 # Dependency Directories
 # =========================
 vendor/
+
+# =========================
+# Database Files (CRITICAL)
+# =========================
+*.db
+*.bolt
+*.sqlite
+*.sqlite3
+
+# AegisQ local DB
+aegisq.db
 
 # =========================
 # IDE / Editor Files
@@ -47,6 +75,7 @@ Thumbs.db
 # =========================
 .env
 .env.*
+.envrc
 
 # =========================
 # Local Key Material (CRITICAL)
@@ -57,19 +86,47 @@ Thumbs.db
 *.pub
 keys/
 node_keys/
+wallets/
 
 # =========================
-# Temporary Test Files
+# Temporary / Test Files
 # =========================
 tmp/
 temp/
+*.tmp
+*.bak
+
+# =========================
+# Benchmark / Profiling Output
+# =========================
+bench.txt
+bench.out
+cpu.prof
+mem.prof
+block.prof
+trace.out
 
 # =========================
 # Docker (future use)
 # =========================
 docker-compose.override.yml
+docker-data/
+*.dockerfile~
 
 # =========================
 # Kubernetes (future use)
 # =========================
 *.kubeconfig
+k8s-secret.yaml
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Misc
+# =========================
+*.cache
+.cache/
