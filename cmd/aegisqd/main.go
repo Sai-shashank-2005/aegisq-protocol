@@ -8,6 +8,7 @@ import (
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/consensus"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/crypto"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/identity"
+	"github.com/Sai-shashank-2005/aegisq-protocol/core/scheduler"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/storage"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/transaction"
 )
@@ -17,7 +18,7 @@ func main() {
 	signer := &crypto.Ed25519Signer{}
 
 	// ===============================
-	// 1️⃣ Create 4 Validators
+	// 1️⃣ Initialize Validators
 	// ===============================
 	var validators []*identity.NodeIdentity
 
@@ -35,18 +36,20 @@ func main() {
 	fmt.Println("Validators initialized.")
 
 	// ===============================
-	// 2️⃣ Build Validator Set (Layer 6)
+	// 2️⃣ Validator Governance (Layer 6)
 	// ===============================
 	vs := consensus.NewValidatorSet()
-
 	for _, v := range validators {
 		vs.AddValidator(v.NodeID, v.PublicKey)
 	}
 
-	votePool := consensus.NewVotePool(vs)
+	// ===============================
+	// 3️⃣ Initialize Scheduler (Layer 7)
+	// ===============================
+	sched := scheduler.NewRoundRobinScheduler(vs)
 
 	// ===============================
-	// 3️⃣ Open Database
+	// 4️⃣ Open Persistent Storage
 	// ===============================
 	db, err := storage.Open("aegisq.db")
 	if err != nil {
@@ -73,15 +76,31 @@ func main() {
 	}
 
 	// ===============================
-	// 4️⃣ Deterministic Leader (Layer 7)
+	// 5️⃣ Determine Leader
 	// ===============================
 	view := 0
-	leader := validators[view%len(validators)]
+
+	leaderID, err := sched.GetLeader(int(height+1), view)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var leader *identity.NodeIdentity
+	for _, v := range validators {
+		if v.NodeID == leaderID {
+			leader = v
+			break
+		}
+	}
+
+	if leader == nil {
+		log.Fatal("leader not found in validator list")
+	}
 
 	fmt.Println("Leader selected:", leader.NodeID)
 
 	// ===============================
-	// 5️⃣ Create Transaction
+	// 6️⃣ Create Transaction
 	// ===============================
 	tx := transaction.NewTransaction(
 		leader,
@@ -89,13 +108,12 @@ func main() {
 		fmt.Sprintf("Block %d metadata", height+1),
 	)
 
-	err = tx.SignWithIdentity(leader)
-	if err != nil {
+	if err := tx.SignWithIdentity(leader); err != nil {
 		log.Fatal(err)
 	}
 
 	// ===============================
-	// 6️⃣ Create Proposed Block
+	// 7️⃣ Propose Block
 	// ===============================
 	newBlock := block.NewBlock(
 		int(height+1),
@@ -104,8 +122,7 @@ func main() {
 		[]*transaction.Transaction{tx},
 	)
 
-	err = newBlock.Finalize(leader)
-	if err != nil {
+	if err := newBlock.Finalize(leader); err != nil {
 		log.Fatal(err)
 	}
 
@@ -114,13 +131,14 @@ func main() {
 	blockHashString := fmt.Sprintf("%x", newBlock.Hash)
 
 	// ===============================
-	// 7️⃣ PREPARE PHASE (Layer 9)
+	// 8️⃣ BFT Voting (Layer 9)
 	// ===============================
+	votePool := consensus.NewVotePool(vs)
+
+	// PREPARE
 	for _, v := range validators {
 
-		// Authorization check (Layer 6)
 		if !vs.IsAuthorized(v.NodeID, v.PublicKey) {
-			fmt.Println("Unauthorized validator:", v.NodeID)
 			continue
 		}
 
@@ -131,8 +149,7 @@ func main() {
 			Type:        consensus.Prepare,
 		}
 
-		err := votePool.AddVote(vote)
-		if err != nil {
+		if err := votePool.AddVote(vote); err != nil {
 			fmt.Println("Prepare vote rejected:", err)
 		}
 	}
@@ -144,13 +161,10 @@ func main() {
 
 	fmt.Println("Prepare quorum reached.")
 
-	// ===============================
-	// 8️⃣ COMMIT PHASE (Layer 9)
-	// ===============================
+	// COMMIT
 	for _, v := range validators {
 
 		if !vs.IsAuthorized(v.NodeID, v.PublicKey) {
-			fmt.Println("Unauthorized validator:", v.NodeID)
 			continue
 		}
 
@@ -161,8 +175,7 @@ func main() {
 			Type:        consensus.Commit,
 		}
 
-		err := votePool.AddVote(vote)
-		if err != nil {
+		if err := votePool.AddVote(vote); err != nil {
 			fmt.Println("Commit vote rejected:", err)
 		}
 	}
@@ -175,12 +188,56 @@ func main() {
 	fmt.Println("Commit quorum reached.")
 
 	// ===============================
-	// 9️⃣ Persist Block (Layer 10)
+	// 9️⃣ Finality (Layer 10)
 	// ===============================
-	err = db.SaveBlock(newBlock)
-	if err != nil {
+	if err := db.SaveBlock(newBlock); err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("Block committed at height:", newBlock.Index)
+
+	// ===============================
+	// 🔟 Print Full Chain
+	// ===============================
+	printFullChain(db)
+}
+
+func printFullChain(db *storage.DB) {
+
+	height, err := db.GetLatestHeight()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("\n========= FULL CHAIN =========")
+
+	var prevHash []byte
+
+	for i := uint64(1); i <= height; i++ {
+
+		b, err := db.GetBlock(i)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("Height:", b.Index)
+		fmt.Printf("Hash: %x\n", b.Hash)
+		fmt.Printf("Previous: %x\n", b.PreviousHash)
+
+		if i > 1 && string(b.PreviousHash) != string(prevHash) {
+			fmt.Println("⚠ Chain linkage broken at height", i)
+		}
+
+		prevHash = b.Hash
+
+		for j, tx := range b.Transactions {
+			fmt.Println("  Tx", j+1)
+			fmt.Println("   Sender:", tx.SenderID)
+			fmt.Println("   DataHash:", tx.DataHash)
+			fmt.Println("   Metadata:", tx.Metadata)
+			fmt.Printf("   Signature: %x\n", tx.Signature)
+		}
+
+		fmt.Println("--------------------------------")
+	}
 }
