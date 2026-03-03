@@ -6,12 +6,11 @@ import (
 	"os"
 )
 
-// Genesis defines initial validator trust root.
 type Genesis struct {
-	Validators []string `json:"validators"`
+	Validators   []string `json:"validators"`
+	validatorMap map[string]struct{}
 }
 
-// LoadGenesis loads genesis configuration from file.
 func LoadGenesis(path string) (*Genesis, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -27,15 +26,15 @@ func LoadGenesis(path string) (*Genesis, error) {
 		return nil, errors.New("genesis must contain at least one validator")
 	}
 
+	g.validatorMap = make(map[string]struct{}, len(g.Validators))
+	for _, v := range g.Validators {
+		g.validatorMap[v] = struct{}{}
+	}
+
 	return &g, nil
 }
 
-// IsValidator checks if provided public key (base64) is authorized.
 func (g *Genesis) IsValidator(pubKeyBase64 string) bool {
-	for _, v := range g.Validators {
-		if v == pubKeyBase64 {
-			return true
-		}
-	}
-	return false
+	_, exists := g.validatorMap[pubKeyBase64]
+	return exists
 }

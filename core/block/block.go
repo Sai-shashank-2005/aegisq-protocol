@@ -1,7 +1,8 @@
 package block
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"time"
 
@@ -38,26 +39,25 @@ func (b *Block) computeBlockHash() ([]byte, error) {
 		return nil, errors.New("merkle root not set")
 	}
 
-	header := struct {
-		Index        int
-		View         int
-		Timestamp    int64
-		PreviousHash []byte
-		MerkleRoot   []byte
-	}{
-		Index:        b.Index,
-		View:         b.View,
-		Timestamp:    b.Timestamp,
-		PreviousHash: b.PreviousHash,
-		MerkleRoot:   b.MerkleRoot,
-	}
+	buf := new(bytes.Buffer)
 
-	bytes, err := json.Marshal(header)
-	if err != nil {
+	// Deterministic field order
+	if err := binary.Write(buf, binary.LittleEndian, int64(b.Index)); err != nil {
 		return nil, err
 	}
 
-	return crypto.Hash(bytes), nil
+	if err := binary.Write(buf, binary.LittleEndian, int64(b.View)); err != nil {
+		return nil, err
+	}
+
+	if err := binary.Write(buf, binary.LittleEndian, b.Timestamp); err != nil {
+		return nil, err
+	}
+
+	buf.Write(b.PreviousHash)
+	buf.Write(b.MerkleRoot)
+
+	return crypto.Hash(buf.Bytes()), nil
 }
 
 func (b *Block) Finalize(node *identity.NodeIdentity) error {
@@ -102,7 +102,7 @@ func (b *Block) Verify(signer crypto.Signer, publicKey []byte) (bool, error) {
 		return false, errors.New("block hash missing")
 	}
 
-	// 1️⃣ Verify each transaction signature
+	// 1️⃣ Verify each transaction
 	for _, tx := range b.Transactions {
 		valid, err := tx.Verify(signer)
 		if err != nil || !valid {
@@ -122,7 +122,7 @@ func (b *Block) Verify(signer crypto.Signer, publicKey []byte) (bool, error) {
 
 	expectedMerkle := ComputeMerkleRoot(txHashes)
 
-	if string(expectedMerkle) != string(b.MerkleRoot) {
+	if !bytes.Equal(expectedMerkle, b.MerkleRoot) {
 		return false, nil
 	}
 
@@ -132,7 +132,7 @@ func (b *Block) Verify(signer crypto.Signer, publicKey []byte) (bool, error) {
 		return false, err
 	}
 
-	if string(expectedHash) != string(b.Hash) {
+	if !bytes.Equal(expectedHash, b.Hash) {
 		return false, nil
 	}
 

@@ -1,7 +1,8 @@
 package transaction
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"time"
 
@@ -10,13 +11,13 @@ import (
 )
 
 type Transaction struct {
-	SenderID  string `json:"sender_id"`
-	PublicKey []byte `json:"public_key"`
-	Algorithm string `json:"algorithm"`
-	DataHash  string `json:"data_hash"`
-	Metadata  string `json:"metadata"`
-	Timestamp int64  `json:"timestamp"`
-	Signature []byte `json:"signature"`
+	SenderID  string
+	PublicKey []byte
+	Algorithm string
+	DataHash  string
+	Metadata  string
+	Timestamp int64
+	Signature []byte
 }
 
 func NewTransaction(node *identity.NodeIdentity, dataHash, metadata string) *Transaction {
@@ -31,32 +32,49 @@ func NewTransaction(node *identity.NodeIdentity, dataHash, metadata string) *Tra
 }
 
 func (tx *Transaction) computePayloadHash() ([]byte, error) {
+
 	if tx.SenderID == "" || tx.DataHash == "" {
 		return nil, errors.New("invalid transaction fields")
 	}
 
-	payload := struct {
-		SenderID  string `json:"sender_id"`
-		PublicKey []byte `json:"public_key"`
-		Algorithm string `json:"algorithm"`
-		DataHash  string `json:"data_hash"`
-		Metadata  string `json:"metadata"`
-		Timestamp int64  `json:"timestamp"`
-	}{
-		SenderID:  tx.SenderID,
-		PublicKey: tx.PublicKey,
-		Algorithm: tx.Algorithm,
-		DataHash:  tx.DataHash,
-		Metadata:  tx.Metadata,
-		Timestamp: tx.Timestamp,
-	}
+	buf := new(bytes.Buffer)
 
-	bytes, err := json.Marshal(payload)
-	if err != nil {
+	// SenderID
+	if err := binary.Write(buf, binary.LittleEndian, int32(len(tx.SenderID))); err != nil {
+		return nil, err
+	}
+	buf.WriteString(tx.SenderID)
+
+	// PublicKey
+	if err := binary.Write(buf, binary.LittleEndian, int32(len(tx.PublicKey))); err != nil {
+		return nil, err
+	}
+	buf.Write(tx.PublicKey)
+
+	// Algorithm
+	if err := binary.Write(buf, binary.LittleEndian, int32(len(tx.Algorithm))); err != nil {
+		return nil, err
+	}
+	buf.WriteString(tx.Algorithm)
+
+	// DataHash
+	if err := binary.Write(buf, binary.LittleEndian, int32(len(tx.DataHash))); err != nil {
+		return nil, err
+	}
+	buf.WriteString(tx.DataHash)
+
+	// Metadata
+	if err := binary.Write(buf, binary.LittleEndian, int32(len(tx.Metadata))); err != nil {
+		return nil, err
+	}
+	buf.WriteString(tx.Metadata)
+
+	// Timestamp
+	if err := binary.Write(buf, binary.LittleEndian, tx.Timestamp); err != nil {
 		return nil, err
 	}
 
-	return crypto.Hash(bytes), nil
+	return crypto.Hash(buf.Bytes()), nil
 }
 
 func (tx *Transaction) Hash() ([]byte, error) {
@@ -64,6 +82,7 @@ func (tx *Transaction) Hash() ([]byte, error) {
 }
 
 func (tx *Transaction) SignWithIdentity(node *identity.NodeIdentity) error {
+
 	hash, err := tx.computePayloadHash()
 	if err != nil {
 		return err
@@ -78,7 +97,13 @@ func (tx *Transaction) SignWithIdentity(node *identity.NodeIdentity) error {
 	return nil
 }
 
+// 🔥 REQUIRED for batch signing
+func (tx *Transaction) SetSignature(sig []byte) {
+	tx.Signature = sig
+}
+
 func (tx *Transaction) Verify(signer crypto.Signer) (bool, error) {
+
 	if tx.Algorithm != signer.Algorithm() {
 		return false, errors.New("algorithm mismatch")
 	}
