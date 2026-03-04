@@ -1,22 +1,16 @@
 import "./globals.css"
 import Link from "next/link"
-import type { ReactNode } from "react"
-
-export const metadata = {
-  title: "AegisQ Explorer",
-  description: "Post-Quantum Blockchain Explorer",
-}
 
 export default function RootLayout({
   children,
 }: {
-  children: ReactNode
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html>
       <body className="bg-black text-white">
 
-        <nav className="border-b border-gray-800 p-4 flex gap-6">
+        <nav className="p-4 border-b border-gray-800 flex gap-6">
           <Link href="/">Dashboard</Link>
           <Link href="/blocks">Blocks</Link>
         </nav>
