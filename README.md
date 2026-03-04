@@ -1,64 +1,82 @@
 # AegisQ Protocol
 
-**Post-Quantum Secure • Byzantine-Resilient • Deterministic Blockchain Core**
+<p align="center">
+<b>Post-Quantum Secure • Deterministic BFT • Immediate Finality</b>
+</p>
 
 ---
 
-## Overview
+# Overview
 
-**AegisQ** is a permissioned blockchain protocol engineered for:
+**AegisQ** is a **Post-Quantum Secure Deterministic BFT Blockchain Engine** designed for high-integrity data anchoring and adversarial environments.
 
-* Deterministic BFT consensus
+It provides:
+
+* Deterministic consensus
 * Strict equivocation prevention
-* Hardened fork resistance
-* Immediate finality
-* Post-Quantum signature support
+* Immediate block finality
+* Post-quantum signature support
+* Persistent storage
+* High-throughput block processing
 
-It serves as a secure modular foundation for tamper-proof data anchoring systems.
-
-This repository contains the full consensus, ledger, storage, and cryptographic engine.
-
----
-
-# Architecture — 10 Layer Deterministic Stack
-
-| Layer | Component            | Responsibility                |
-| ----- | -------------------- | ----------------------------- |
-| 1     | Crypto (PQC-Ready)   | Dilithium / ECDSA abstraction |
-| 2     | Identity             | Node identity & signing       |
-| 3     | Transactions         | Signed metadata transactions  |
-| 4     | Blocks               | Merkle-rooted signed blocks   |
-| 5     | Ledger               | Chain integrity enforcement   |
-| 6     | Validator Governance | Authorization & membership    |
-| 7     | Deterministic Leader | Round-robin proposer          |
-| 8     | View-Based Failover  | Leader rotation logic         |
-| 9     | BFT Voting           | 2f+1 quorum enforcement       |
-| 10    | Finality Engine      | Fork prevention & commit lock |
-
-Each layer is independently testable and modular by design.
+The protocol is implemented entirely in **Go** and includes a **full blockchain explorer UI** for inspecting blocks and transactions.
 
 ---
 
-# Current System Capabilities
+# What This Project Implements
 
-* 10,000 transactions per block
-* Dilithium2 (Post-Quantum) signature support
-* Ed25519 classical support (optional)
-* Persistent storage via BoltDB
-* O(1) transaction lookup (height + index)
-* O(1) transaction lookup (hash index)
-* Deterministic leader rotation
-* Strict equivocation prevention
-* Prepare + Commit BFT phases
-* Immediate deterministic finality
-* Synthetic dataset stress testing
-* CLI transaction inspection tools
+This repository contains a **complete blockchain stack**, including:
+
+| Component       | Description                                    |
+| --------------- | ---------------------------------------------- |
+| Protocol Engine | Deterministic BFT blockchain core              |
+| Crypto Engine   | Post-Quantum Dilithium2 + Classical signatures |
+| Consensus       | Prepare / Commit voting phases                 |
+| Ledger          | Chain integrity enforcement                    |
+| Storage         | BoltDB persistent state                        |
+| Scheduler       | Deterministic leader rotation                  |
+| Simulation      | Synthetic transaction generator                |
+| Explorer API    | REST interface for querying chain state        |
+| Explorer UI     | Real-time blockchain explorer dashboard        |
 
 ---
 
-# Security Model
+# Architecture — Deterministic 10 Layer Stack
 
-## Byzantine Fault Tolerance
+| Layer | Component            | Responsibility                           |
+| ----- | -------------------- | ---------------------------------------- |
+| 1     | Crypto               | PQC + classical signature abstraction    |
+| 2     | Identity             | Validator identity & key management      |
+| 3     | Transactions         | Signed data anchoring transactions       |
+| 4     | Blocks               | Merkle-rooted block structure            |
+| 5     | Ledger               | Chain validation & integrity enforcement |
+| 6     | Validator Governance | Membership control                       |
+| 7     | Deterministic Leader | Round-robin block proposer               |
+| 8     | View Rotation        | Leader failover logic                    |
+| 9     | BFT Voting           | 2f+1 quorum enforcement                  |
+| 10    | Finality Engine      | Commit lock & fork prevention            |
+
+Each layer is modular and independently testable.
+
+---
+
+# Core Features
+
+### Deterministic BFT Consensus
+
+AegisQ implements a deterministic **Prepare → Commit** consensus model.
+
+Properties:
+
+* No probabilistic finality
+* No chain reorganizations
+* No fork ambiguity
+
+Once a block reaches commit quorum it becomes **permanently finalized**.
+
+---
+
+### Byzantine Fault Tolerance
 
 For `n` validators:
 
@@ -66,42 +84,35 @@ For `n` validators:
 f = (n - 1) / 3
 ```
 
-The system tolerates up to `f` Byzantine validators while preserving safety and liveness.
+The protocol tolerates up to **f Byzantine validators** while preserving:
+
+* Safety
+* Liveness
 
 ---
 
-## Strict Equivocation Prevention
+### Strict Equivocation Prevention
 
-A validator cannot:
+Validators are prevented from:
 
-* Vote twice in the same view and phase
-* Vote for two different blocks in the same view
+* Voting twice in the same phase
+* Voting for two blocks in the same view
 
-All violations are rejected at the voting layer.
-
----
-
-## Deterministic Finality
-
-Once a block reaches commit quorum:
-
-* The block becomes irreversible
-* No probabilistic confirmations
-* No chain reorg assumptions
+Any violation is rejected at the consensus layer.
 
 ---
 
-# Post-Quantum Cryptography Integration
+# Post‑Quantum Cryptography
 
-AegisQ supports both classical and post-quantum signatures.
+AegisQ supports both classical and post‑quantum signatures.
 
-## Active Production Mode
+## Active Mode
 
 Currently running with:
 
-* Dilithium2 (ML-DSA-44)
+* **Dilithium2 (ML‑DSA‑44)**
 
-Transactions and blocks are signed using post-quantum cryptography.
+All transactions and blocks are signed using post‑quantum cryptography.
 
 ---
 
@@ -109,106 +120,67 @@ Transactions and blocks are signed using post-quantum cryptography.
 
 Environment:
 
-* CPU: 13th Gen Intel® Core™ i7-13620H
+* CPU: Intel Core i7
 * OS: Linux amd64
-* Go: native benchmarking
+* Language: Go
 
-Command used:
+Command:
 
 ```
 go test ./core/crypto -bench=. -benchmem -run=^$
 ```
 
----
-
-## Benchmark Results
+### Results
 
 ```
-BenchmarkDilithiumKeyGen-16        30282    38682 ns/op    4096 B/op    2 allocs/op
-BenchmarkDilithiumSign-16          11571   104051 ns/op    2696 B/op    2 allocs/op
-BenchmarkDilithiumVerify-16        31044    37893 ns/op       0 B/op    0 allocs/op
+BenchmarkDilithiumKeyGen        ~38µs
+BenchmarkDilithiumSign          ~104µs
+BenchmarkDilithiumVerify        ~37µs
 
-BenchmarkECDSAKeyGen-16            52716    22555 ns/op    1304 B/op   21 allocs/op
-BenchmarkECDSASign-16              16744    71969 ns/op    7135 B/op   82 allocs/op
-BenchmarkECDSAVerify-16             9475   109940 ns/op    1504 B/op   29 allocs/op
+BenchmarkECDSAKeyGen            ~22µs
+BenchmarkECDSASign              ~72µs
+BenchmarkECDSAVerify            ~110µs
 ```
-
----
-
-## Verification Performance (Validator Critical Path)
-
-| Algorithm   | Verify Time | Allocations |
-| ----------- | ----------- | ----------- |
-| Dilithium2  | ~37.8 µs    | 0           |
-| ECDSA P-256 | ~109.9 µs   | 29          |
-
-Dilithium verification is approximately **3× faster** than ECDSA in this environment.
-
-Validators predominantly verify signatures — making Dilithium advantageous.
-
----
-
-## Signing Performance (Client-Side)
-
-| Algorithm   | Sign Time |
-| ----------- | --------- |
-| ECDSA P-256 | ~71.9 µs  |
-| Dilithium2  | ~104 µs   |
-
-ECDSA signs faster, but signing is client-side and not consensus critical.
-
----
-
-# Runtime Performance (10,000 Transactions per Block)
-
-Measured using:
-
-```
-time go run ./cmd/aegisqd
-```
-
-## Dilithium2 Results
-
-* Transaction generation: ~1.2s
-* Block finalize: ~117ms
-* Total execution: < 1.5s
-
-## Ed25519 Results
-
-* Transaction generation: ~400ms
-* Block finalize: ~35ms
 
 Observation:
 
-Dilithium increases signing cost (~3x) but maintains strong verification efficiency.
+* Dilithium verification is **~3× faster than ECDSA**
+* Verification dominates validator workload
+
+Therefore Dilithium improves consensus throughput.
 
 ---
 
-# Transaction Model
+# Runtime Performance
 
-Each transaction contains:
+Test workload:
 
-* Sender ID
-* Public Key
-* Algorithm
-* DataHash (anchored external data)
-* Metadata
-* Timestamp
-* Signature
+* **10,000 transactions per block**
 
-Transactions are:
+### Dilithium Mode
 
-* Individually signed
-* Merkle aggregated
-* Indexed by height and hash
+| Stage                  | Time   |
+| ---------------------- | ------ |
+| Transaction Generation | ~1.2s  |
+| Block Finalization     | ~117ms |
+| Total Runtime          | <1.5s  |
+
+### Ed25519 Mode
+
+| Stage                  | Time   |
+| ---------------------- | ------ |
+| Transaction Generation | ~400ms |
+| Block Finalization     | ~35ms  |
+
+Observation:
+
+Post‑quantum signing increases cost but verification remains efficient.
 
 ---
 
 # Storage Architecture
 
-Persistent database:
-
-* BoltDB backend
+Persistent storage uses **BoltDB**.
 
 Buckets:
 
@@ -219,53 +191,53 @@ Buckets:
 
 Supports:
 
-* Height-based block retrieval
-* Hash-based transaction retrieval
-* Constant-time lookup
+* O(1) block retrieval by height
+* O(1) transaction lookup by hash
 
 ---
 
-# CLI Commands
+# Blockchain Explorer
+
+AegisQ includes a **full explorer UI**.
+
+Explorer capabilities:
+
+* Network dashboard
+* Block explorer
+* Transaction explorer
+* Validator monitoring
+* Block search
+* Transaction search
+
+### Dashboard Metrics
+
+* Latest block
+* Active validators
+* Block transaction count
+* Network TPS
+
+### Block Explorer
+
+Displays:
+
+* Block height
+* Transaction count
+* Merkle root
+* Validator proposer
+
+### Transaction Explorer
+
+Displays:
+
+* Sender
+* Signature algorithm
+* Data hash
+* Metadata
+* Timestamp
 
 ---
 
-## Fresh Start (Delete Existing Chain)
-
-If you switch cryptographic algorithms or want to restart from genesis:
-
-```
-rm aegisq.db
-```
-
-Then run the node again:
-
-```
-go run ./cmd/aegisqd
-```
-
-This will create a new chain starting at height 1.
-
----
-
-## Create Block (Default Execution)
-
-Running the node without arguments automatically:
-
-* Initializes validators
-* Restores latest height (if DB exists)
-* Generates 10,000 synthetic transactions
-* Runs BFT Prepare + Commit
-* Finalizes and stores the block
-
-Command:
-
-```
-go run ./cmd/aegisqd
-```
-
----
-
-## Query Transaction by Height + Index
+# CLI Usage
 
 ## Run Node
 
@@ -273,11 +245,11 @@ go run ./cmd/aegisqd
 go run ./cmd/aegisqd
 ```
 
-Creates block with 10,000 synthetic transactions.
+Creates a block with **10,000 synthetic transactions**.
 
 ---
 
-## Query Transaction by Height + Index
+## Query Transaction by Height
 
 ```
 go run ./cmd/aegisqd gettx <height> <index>
@@ -299,21 +271,6 @@ go run ./cmd/aegisqd gettxhash <data_hash>
 
 ---
 
-# Stress Testing
-
-Validated against:
-
-* Double vote attack
-* Equivocation attempt
-* Fork injection exploit
-* Unauthorized validator voting
-* Malicious block tampering
-* High-load 50k transaction simulation
-
-All tests pass within theoretical BFT tolerance bounds.
-
----
-
 # Project Structure
 
 ```
@@ -327,34 +284,50 @@ core/
 ├── simulation/
 ├── storage/
 ├── transaction/
+
+cmd/
+└── aegisqd/
+
+explorer/
+└── web-ui/
 ```
+
+---
+
+# Stress Testing
+
+The system has been tested against:
+
+* Double vote attack
+* Validator equivocation
+* Fork injection
+* Unauthorized validator voting
+* Block tampering
+* High load transaction simulation
+
+All tests remain within theoretical BFT tolerance bounds.
 
 ---
 
 # Current System Status
 
-Architecture completeness: High
-PQC Integration: Active
-Deterministic Finality: Enforced
-Persistent Storage: Enabled
-Transaction Indexing: Enabled
-Adversarial Test Coverage: Extensive
-
-Next planned enhancements:
-
-* Full chain verification on startup
-* Merkle proof generation API
-* Multi-node network layer
-* Advanced Byzantine live simulation
+| Component              | Status      |
+| ---------------------- | ----------- |
+| Protocol Engine        | Complete    |
+| Post‑Quantum Crypto    | Integrated  |
+| Deterministic Finality | Enforced    |
+| Persistent Storage     | Enabled     |
+| Transaction Indexing   | Implemented |
+| Blockchain Explorer    | Functional  |
 
 ---
 
 # Version
 
-v1.1.0 — Post-Quantum Persistent BFT Engine
+**v1.1.0 — Post‑Quantum Deterministic BFT Engine**
 
 ---
 
 <p align="center">
-<b>Deterministic Trust. Engineered for Adversarial Environments.</b>
+<b>Deterministic Trust — Engineered for Adversarial Environments</b>
 </p>
