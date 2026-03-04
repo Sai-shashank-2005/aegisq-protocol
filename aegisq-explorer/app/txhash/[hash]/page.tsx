@@ -2,20 +2,18 @@
 
 import {useParams} from "next/navigation"
 import {useEffect,useState} from "react"
-import {getTx} from "../../../../lib/api"
+import {getTxHash} from "../../../lib/api"
 
-export default function TxPage(){
+export default function TxHashPage(){
 
   const params = useParams()
-
-  const height = Number(params.height)
-  const index = Number(params.index)
+  const hash = params.hash as string
 
   const [tx,setTx] = useState<any>(null)
 
   useEffect(()=>{
-    getTx(height,index).then(setTx)
-  },[height,index])
+    getTxHash(hash).then(setTx)
+  },[hash])
 
   if(!tx) return <div>Loading...</div>
 

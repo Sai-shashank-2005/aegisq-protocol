@@ -1,30 +1,72 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { getStatus } from "../lib/api"
+import {useEffect,useState} from "react"
+import {getStatus,getBlocks} from "../lib/api"
+import Link from "next/link"
 
-export default function Dashboard() {
+export default function Home(){
 
-  const [status, setStatus] = useState<any>(null)
+  const [status,setStatus] = useState<any>(null)
+  const [blocks,setBlocks] = useState<any[]>([])
 
-  useEffect(() => {
+  useEffect(()=>{
+
     getStatus().then(setStatus)
-  }, [])
+    getBlocks().then(setBlocks)
 
-  if (!status) return <div>Loading...</div>
+  },[])
 
-  return (
+  return(
+
     <div>
 
-      <h1 className="text-3xl mb-6">AegisQ Explorer</h1>
+      <h1 className="text-3xl mb-6">
+        AegisQ Network
+      </h1>
 
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded">
+      {status && (
+        <div className="mb-6">
+          Latest Height: {status.height}
+        </div>
+      )}
 
-        <p>Status: <span className="text-green-400">{status.status}</span></p>
+      <h2 className="text-xl mb-4">
+        Latest Blocks
+      </h2>
 
-        <p>Latest Height: {status.height}</p>
+      <table className="w-full">
 
-      </div>
+        <thead>
+          <tr className="border-b border-gray-700">
+            <th className="p-3 text-left">Height</th>
+            <th className="p-3 text-left">Transactions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {blocks.slice(0,10).map((b)=>(
+            <tr key={b.height} className="border-b border-gray-800">
+
+              <td className="p-3">
+                <Link
+                  className="text-blue-400"
+                  href={`/block/${b.height}`}
+                >
+                  {b.height}
+                </Link>
+              </td>
+
+              <td className="p-3">
+                {b.txs}
+              </td>
+
+            </tr>
+          ))}
+
+        </tbody>
+
+      </table>
 
     </div>
   )

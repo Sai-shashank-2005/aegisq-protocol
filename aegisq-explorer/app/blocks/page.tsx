@@ -1,54 +1,57 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { getBlocks } from "../../lib/api"
+import {useEffect,useState} from "react"
+import {getBlocks} from "../../lib/api"
 import Link from "next/link"
 
-export default function BlocksPage() {
+export default function BlocksPage(){
 
-  const [blocks, setBlocks] = useState<any[]>([])
+  const [blocks,setBlocks] = useState<any[]>([])
 
-  useEffect(() => {
-    getBlocks().then((data) => {
-      if (Array.isArray(data)) setBlocks(data)
-    })
-  }, [])
+  useEffect(()=>{
+    getBlocks().then(setBlocks)
+  },[])
 
-  return (
+  return(
+
     <div>
 
-      <h1 className="text-3xl mb-6">Latest Blocks</h1>
+      <h1 className="text-3xl mb-6">
+        Blocks
+      </h1>
 
       <table className="w-full">
 
-        <thead className="bg-gray-800">
-          <tr>
-            <th className="p-4 text-left">Height</th>
-            <th className="p-4 text-left">Transactions</th>
-            <th className="p-4 text-left">Hash</th>
+        <thead>
+          <tr className="border-b border-gray-700">
+            <th className="p-3 text-left">Height</th>
+            <th className="p-3 text-left">Hash</th>
+            <th className="p-3 text-left">Transactions</th>
           </tr>
         </thead>
 
         <tbody>
 
-          {blocks.map((b) => (
-            <tr key={b.height} className="border-t border-gray-800">
+          {blocks.map((b)=>(
+            <tr key={b.height} className="border-b border-gray-800">
 
-              <td className="p-4">
+              <td className="p-3">
+
                 <Link
                   href={`/block/${b.height}`}
                   className="text-blue-400"
                 >
                   {b.height}
                 </Link>
+
               </td>
 
-              <td className="p-4">
-                {b.txs}
-              </td>
-
-              <td className="p-4 font-mono">
+              <td className="p-3">
                 {b.hash.slice(0,20)}...
+              </td>
+
+              <td className="p-3">
+                {b.txs}
               </td>
 
             </tr>
