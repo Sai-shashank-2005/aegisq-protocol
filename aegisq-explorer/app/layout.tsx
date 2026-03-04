@@ -1,21 +1,31 @@
 import "./globals.css"
-import Navbar from "@/components/Navbar"
+import Sidebar from "@/components/SideBar"
+import Header from "@/components/Header"
 
 export default function RootLayout({children}:{children:React.ReactNode}){
 
 return(
 
-<html>
+<html lang="en">
+
 <body className="bg-black text-white">
 
-<Navbar/>
+<Sidebar/>
 
-<div className="max-w-6xl mx-auto py-10">
+<div className="ml-72">
+
+<Header/>
+
+<div className="p-8">
 {children}
 </div>
 
+</div>
+
 </body>
+
 </html>
 
 )
+
 }

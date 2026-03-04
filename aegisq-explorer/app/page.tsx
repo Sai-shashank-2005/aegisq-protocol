@@ -2,46 +2,60 @@
 
 import {useEffect,useState} from "react"
 import {getStatus,getBlocks} from "@/lib/api"
-import StatCard from "@/components/StatCard"
-import BlockCard from "@/components/BlockCard"
+import Hero from "@/components/Hero"
+import MetricCard from "@/components/MetricCard"
 
-export default function Home(){
+export default function Dashboard(){
 
 const [status,setStatus]=useState<any>()
-const [blocks,setBlocks]=useState<any[]>([])
 
 useEffect(()=>{
-
 getStatus().then(setStatus)
-getBlocks().then(setBlocks)
-
 },[])
+
+if(!status) return <div>Loading...</div>
 
 return(
 
-<div>
+<div className="space-y-8">
 
-<h1 className="text-3xl mb-6">AegisQ Network</h1>
+<Hero
+title="AegisQ Network Dashboard"
+subtitle="Real-time hybrid BFT blockchain monitoring"
+/>
 
-<div className="grid grid-cols-3 gap-4 mb-8">
+{/* METRICS */}
 
-<StatCard title="Latest Height" value={status?.height}/>
-<StatCard title="Status" value={status?.status}/>
-<StatCard title="Blocks Indexed" value={blocks.length}/>
+<div className="grid grid-cols-4 gap-6">
 
-</div>
+<MetricCard
+title="Latest Block"
+value={status.height}
+color="text-white"
+/>
 
-<h2 className="text-xl mb-4">Recent Blocks</h2>
+<MetricCard
+title="Validators"
+value="4"
+color="text-green-400"
+/>
 
-<div className="grid grid-cols-2 gap-4">
+<MetricCard
+title="Block Size"
+value="10000 TX"
+color="text-blue-400"
+/>
 
-{blocks.slice(0,8).map(b=>
-<BlockCard key={b.height} block={b}/>
-)}
+<MetricCard
+title="TPS"
+value="1200"
+color="text-purple-400"
+/>
 
 </div>
 
 </div>
 
 )
+
 }
