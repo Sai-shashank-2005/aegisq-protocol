@@ -2,11 +2,7 @@ import "./globals.css"
 import Link from "next/link"
 import SearchBar from "../components/SearchBar"
 
-export default function RootLayout({
-  children,
-}:{
-  children:React.ReactNode
-}){
+export default function RootLayout({children}:{children:React.ReactNode}){
 
   return (
     <html>
@@ -16,7 +12,7 @@ export default function RootLayout({
 
           <div className="flex gap-6 text-lg">
 
-            <Link href="/">
+            <Link href="/" className="font-bold">
               AegisQ Explorer
             </Link>
 

@@ -1,7 +1,7 @@
 "use client"
 
-import {useState} from "react"
-import {useRouter} from "next/navigation"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function SearchBar(){
 
@@ -23,10 +23,8 @@ export default function SearchBar(){
   }
 
   return(
-    <form
-      onSubmit={search}
-      className="flex gap-2"
-    >
+
+    <form onSubmit={search} className="flex gap-2">
 
       <input
         className="bg-gray-900 border border-gray-700 p-2 rounded w-80"
@@ -40,5 +38,6 @@ export default function SearchBar(){
       </button>
 
     </form>
+
   )
 }

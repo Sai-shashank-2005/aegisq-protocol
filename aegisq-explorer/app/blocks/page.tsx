@@ -20,46 +20,33 @@ export default function BlocksPage(){
         Blocks
       </h1>
 
-      <table className="w-full">
+      <div className="grid grid-cols-2 gap-4">
 
-        <thead>
-          <tr className="border-b border-gray-700">
-            <th className="p-3 text-left">Height</th>
-            <th className="p-3 text-left">Hash</th>
-            <th className="p-3 text-left">Transactions</th>
-          </tr>
-        </thead>
+        {blocks.map((b)=>(
+          
+          <Link key={b.height} href={`/block/${b.height}`}>
 
-        <tbody>
+            <div className="bg-gray-900 p-4 rounded hover:bg-gray-800">
 
-          {blocks.map((b)=>(
-            <tr key={b.height} className="border-b border-gray-800">
+              <div className="text-lg">
+                Block {b.height}
+              </div>
 
-              <td className="p-3">
+              <div className="text-gray-400 text-sm">
+                Transactions: {b.txs}
+              </div>
 
-                <Link
-                  href={`/block/${b.height}`}
-                  className="text-blue-400"
-                >
-                  {b.height}
-                </Link>
+              <div className="text-gray-500 text-xs mt-2">
+                {b.hash.slice(0,25)}...
+              </div>
 
-              </td>
+            </div>
 
-              <td className="p-3">
-                {b.hash.slice(0,20)}...
-              </td>
+          </Link>
 
-              <td className="p-3">
-                {b.txs}
-              </td>
+        ))}
 
-            </tr>
-          ))}
-
-        </tbody>
-
-      </table>
+      </div>
 
     </div>
   )

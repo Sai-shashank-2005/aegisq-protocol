@@ -27,15 +27,13 @@ export default function TxPage(){
         Transaction
       </h1>
 
-      <div className="space-y-2">
+      <div className="bg-gray-900 p-6 rounded space-y-2">
 
         <div>Sender: {tx.sender_id}</div>
-
         <div>Algorithm: {tx.algorithm}</div>
-
         <div>Data Hash: {tx.data_hash}</div>
-
         <div>Metadata: {tx.metadata}</div>
+        <div>Timestamp: {tx.timestamp}</div>
 
       </div>
 
