@@ -1,36 +1,21 @@
 import "./globals.css"
-import Link from "next/link"
-import SearchBar from "../components/SearchBar"
+import Navbar from "@/components/Navbar"
 
 export default function RootLayout({children}:{children:React.ReactNode}){
 
-  return (
-    <html>
-      <body className="bg-black text-white">
+return(
 
-        <nav className="border-b border-gray-800 p-4 flex justify-between">
+<html>
+<body className="bg-black text-white">
 
-          <div className="flex gap-6 text-lg">
+<Navbar/>
 
-            <Link href="/" className="font-bold">
-              AegisQ Explorer
-            </Link>
+<div className="max-w-6xl mx-auto py-10">
+{children}
+</div>
 
-            <Link href="/blocks">
-              Blocks
-            </Link>
+</body>
+</html>
 
-          </div>
-
-          <SearchBar/>
-
-        </nav>
-
-        <main className="max-w-6xl mx-auto p-6">
-          {children}
-        </main>
-
-      </body>
-    </html>
-  )
+)
 }

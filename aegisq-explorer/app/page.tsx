@@ -1,55 +1,47 @@
 "use client"
 
 import {useEffect,useState} from "react"
-import {getStatus,getBlocks} from "../lib/api"
-import Link from "next/link"
+import {getStatus,getBlocks} from "@/lib/api"
+import StatCard from "@/components/StatCard"
+import BlockCard from "@/components/BlockCard"
 
 export default function Home(){
 
-  const [status,setStatus] = useState<any>(null)
-  const [blocks,setBlocks] = useState<any[]>([])
+const [status,setStatus]=useState<any>()
+const [blocks,setBlocks]=useState<any[]>([])
 
-  useEffect(()=>{
-    getStatus().then(setStatus)
-    getBlocks().then(setBlocks)
-  },[])
+useEffect(()=>{
 
-  return(
+getStatus().then(setStatus)
+getBlocks().then(setBlocks)
 
-    <div>
+},[])
 
-      <h1 className="text-3xl mb-6">
-        AegisQ Network
-      </h1>
+return(
 
-      {status && (
-        <div className="bg-gray-900 p-4 rounded mb-6">
-          Latest Height: {status.height}
-        </div>
-      )}
+<div>
 
-      <h2 className="text-xl mb-4">
-        Recent Blocks
-      </h2>
+<h1 className="text-3xl mb-6">AegisQ Network</h1>
 
-      <div className="space-y-2">
+<div className="grid grid-cols-3 gap-4 mb-8">
 
-        {blocks.slice(0,10).map((b)=>(
-          
-          <Link key={b.height} href={`/block/${b.height}`}>
+<StatCard title="Latest Height" value={status?.height}/>
+<StatCard title="Status" value={status?.status}/>
+<StatCard title="Blocks Indexed" value={blocks.length}/>
 
-            <div className="bg-gray-900 p-3 rounded hover:bg-gray-800">
+</div>
 
-              Block {b.height} • {b.txs} tx
+<h2 className="text-xl mb-4">Recent Blocks</h2>
 
-            </div>
+<div className="grid grid-cols-2 gap-4">
 
-          </Link>
+{blocks.slice(0,8).map(b=>
+<BlockCard key={b.height} block={b}/>
+)}
 
-        ))}
+</div>
 
-      </div>
+</div>
 
-    </div>
-  )
+)
 }

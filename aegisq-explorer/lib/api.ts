@@ -1,16 +1,16 @@
-const API = "http://localhost:8080"
+export const API = "http://localhost:8080"
 
-export async function getStatus(){
+export async function getStatus() {
   const res = await fetch(`${API}/status`)
   return res.json()
 }
 
-export async function getBlocks(){
+export async function getBlocks() {
   const res = await fetch(`${API}/blocks`)
   return res.json()
 }
 
-export async function getBlock(height:number){
+export async function getBlock(height:number) {
   const res = await fetch(`${API}/block/${height}`)
   return res.json()
 }

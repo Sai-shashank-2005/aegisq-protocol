@@ -1,125 +1,144 @@
 "use client"
 
-import {useEffect,useState} from "react"
-import {useParams} from "next/navigation"
-import {getBlock} from "../../../lib/api"
-import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+import { getBlock } from "@/lib/api"
 
 export default function BlockPage(){
 
-  const params = useParams()
-  const height = Number(params.height)
+const params = useParams()
+const height = Number(params.height)
 
-  const [block,setBlock] = useState<any>(null)
-  const [page,setPage] = useState(0)
+const [block,setBlock] = useState<any>()
+const [page,setPage] = useState(1)
 
-  const PAGE_SIZE = 25
+const TX_PER_PAGE = 50
 
-  useEffect(()=>{
-    getBlock(height).then(setBlock)
-  },[height])
+useEffect(()=>{
+getBlock(height).then(setBlock)
+},[height])
 
-  if(!block) return <div>Loading...</div>
+if(!block) return <div className="p-10">Loading block...</div>
 
-  const start = page * PAGE_SIZE
-  const end = start + PAGE_SIZE
+const start = (page-1)*TX_PER_PAGE
+const end = start + TX_PER_PAGE
 
-  const txs = block.Transactions.slice(start,end)
+const txs = block.Transactions.slice(start,end)
 
-  return(
+const totalPages = Math.ceil(block.Transactions.length / TX_PER_PAGE)
 
-    <div>
+return(
 
-      <div className="text-gray-400 mb-4">
-        <Link href="/">Home</Link> / 
-        <Link href="/blocks"> Blocks</Link> / 
-        Block {block.Index}
-      </div>
+<div className="max-w-6xl mx-auto px-6">
 
-      <h1 className="text-3xl mb-6">
-        Block {block.Index}
-      </h1>
+{/* Title */}
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+<h1 className="text-3xl font-semibold mb-8">
+Block {height}
+</h1>
 
-        <div className="bg-gray-900 p-4 rounded">
-          <div className="text-gray-400">Height</div>
-          <div className="text-xl">{block.Index}</div>
-        </div>
+{/* Stats */}
 
-        <div className="bg-gray-900 p-4 rounded">
-          <div className="text-gray-400">Transactions</div>
-          <div className="text-xl">{block.Transactions.length}</div>
-        </div>
+<div className="grid grid-cols-3 gap-4 mb-8">
 
-        <div className="bg-gray-900 p-4 rounded">
-          <div className="text-gray-400">View</div>
-          <div className="text-xl">{block.View}</div>
-        </div>
+<div className="bg-gray-900 border border-gray-800 p-5 rounded">
+<div className="text-gray-400 text-sm">Height</div>
+<div className="text-xl">{block.Index}</div>
+</div>
 
-      </div>
+<div className="bg-gray-900 border border-gray-800 p-5 rounded">
+<div className="text-gray-400 text-sm">Transactions</div>
+<div className="text-xl">{block.Transactions.length}</div>
+</div>
 
-      <table className="w-full">
+<div className="bg-gray-900 border border-gray-800 p-5 rounded">
+<div className="text-gray-400 text-sm">View</div>
+<div className="text-xl">{block.View}</div>
+</div>
 
-        <thead className="border-b border-gray-700">
-          <tr>
-            <th className="p-3 text-left">Tx Index</th>
-            <th className="p-3 text-left">Sender</th>
-          </tr>
-        </thead>
+</div>
 
-        <tbody>
+{/* Transactions */}
 
-          {txs.map((tx:any,i:number)=>{
+<div className="bg-gray-900 border border-gray-800 rounded">
 
-            const index = start + i
+<div className="p-5 border-b border-gray-800 flex justify-between">
 
-            return(
+<h2 className="text-lg font-semibold">Transactions</h2>
 
-              <tr key={index} className="border-b border-gray-800">
+<div className="text-gray-400 text-sm">
+Showing {start} - {end} of {block.Transactions.length}
+</div>
 
-                <td className="p-3">
+</div>
 
-                  <Link
-                    href={`/tx/${height}/${index}`}
-                    className="text-blue-400"
-                  >
-                    {index}
-                  </Link>
+<table className="w-full text-left">
 
-                </td>
+<thead className="text-gray-400 border-b border-gray-800">
+<tr>
+<th className="p-3">Index</th>
+<th className="p-3">Sender</th>
+</tr>
+</thead>
 
-                <td className="p-3">
-                  {tx.sender_id}
-                </td>
+<tbody>
 
-              </tr>
+{txs.map((tx:any,i:number)=>{
 
-            )
-          })}
+const index = start + i
 
-        </tbody>
+return(
 
-      </table>
+<tr
+key={index}
+onClick={()=>window.location.href=`/tx/${height}/${index}`}
+className="border-b border-gray-800 hover:bg-gray-800 cursor-pointer transition"
+>
 
-      <div className="flex gap-4 mt-6">
+<td className="p-3 text-blue-400">{index}</td>
 
-        <button
-          onClick={()=>setPage(Math.max(page-1,0))}
-          className="bg-gray-800 px-4 py-2 rounded"
-        >
-          Previous
-        </button>
+<td className="p-3">{tx.sender_id}</td>
 
-        <button
-          onClick={()=>setPage(page+1)}
-          className="bg-gray-800 px-4 py-2 rounded"
-        >
-          Next
-        </button>
+</tr>
 
-      </div>
+)
 
-    </div>
-  )
+})}
+
+</tbody>
+
+</table>
+
+{/* Pagination */}
+
+<div className="flex justify-center gap-2 p-5">
+
+<button
+onClick={()=>setPage(page-1)}
+disabled={page===1}
+className="px-3 py-1 bg-gray-800 rounded disabled:opacity-40"
+>
+Prev
+</button>
+
+<div className="px-4 py-1">
+Page {page} / {totalPages}
+</div>
+
+<button
+onClick={()=>setPage(page+1)}
+disabled={page===totalPages}
+className="px-3 py-1 bg-gray-800 rounded disabled:opacity-40"
+>
+Next
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+)
+
 }
