@@ -19,21 +19,14 @@ import (
 
 func main() {
 
-	// =========================================
-	// CLI MODE: gettx <height> <index>
-	// =========================================
+	// =========================
+	// CLI MODE: gettx
+	// =========================
 
 	if len(os.Args) == 4 && os.Args[1] == "gettx" {
 
-		height, err := strconv.Atoi(os.Args[2])
-		if err != nil {
-			log.Fatal("invalid block height")
-		}
-
-		index, err := strconv.Atoi(os.Args[3])
-		if err != nil {
-			log.Fatal("invalid transaction index")
-		}
+		height, _ := strconv.Atoi(os.Args[2])
+		index, _ := strconv.Atoi(os.Args[3])
 
 		db, err := storage.Open("aegisq.db")
 		if err != nil {
@@ -53,13 +46,12 @@ func main() {
 		tx := blockObj.Transactions[index]
 
 		printTxDetails(blockObj.Index, index, tx)
-
 		return
 	}
 
-	// =========================================
-	// CLI MODE: gettxhash <hash>
-	// =========================================
+	// =========================
+	// CLI MODE: gettxhash
+	// =========================
 
 	if len(os.Args) == 3 && os.Args[1] == "gettxhash" {
 
@@ -79,21 +71,19 @@ func main() {
 		tx := blockObj.Transactions[index]
 
 		printTxDetails(blockObj.Index, index, tx)
-
 		return
 	}
 
-	// =========================================
-	// NORMAL BLOCK PRODUCTION MODE
-	// =========================================
+	// =========================
+	// NORMAL NODE MODE
+	// =========================
 
 	signer, err := crypto.NewDilithiumSigner()
 	if err != nil {
 		panic(err)
 	}
 
-	// Initialize Validators
-
+	// 1️⃣ Validators
 	var validators []*identity.NodeIdentity
 
 	for i := 1; i <= 4; i++ {
@@ -102,7 +92,6 @@ func main() {
 			fmt.Sprintf("validator-%d", i),
 			signer,
 		)
-
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -112,32 +101,22 @@ func main() {
 
 	fmt.Println("Validators initialized.")
 
-	// Governance Layer
-
+	// 2️⃣ Validator governance
 	vs := consensus.NewValidatorSet()
 
 	for _, v := range validators {
 		vs.AddValidator(v.NodeID, v.PublicKey)
 	}
 
-	// Scheduler
-
+	// 3️⃣ Leader scheduler
 	sched := scheduler.NewRoundRobinScheduler(vs)
 
-	// Open Database
-
+	// 4️⃣ Database
 	db, err := storage.Open("aegisq.db")
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer db.Close()
-
-	// Start API server (non-blocking)
-
-	go startServer(db)
-
-	// Restore chain state
 
 	height, err := db.GetLatestHeight()
 	if err != nil {
@@ -162,8 +141,7 @@ func main() {
 		fmt.Println("No chain found. Starting fresh.")
 	}
 
-	// Leader Selection
-
+	// 5️⃣ Leader selection
 	view := 0
 
 	leaderID, err := sched.GetLeader(int(height+1), view)
@@ -187,8 +165,7 @@ func main() {
 
 	fmt.Println("Leader selected:", leader.NodeID)
 
-	// Generate Synthetic Transactions
-
+	// 6️⃣ Generate transactions
 	startTx := time.Now()
 
 	txs, err := simulation.GenerateSyntheticDataset(10000, leader)
@@ -199,8 +176,7 @@ func main() {
 	fmt.Println("Generated synthetic storage transactions:", len(txs))
 	fmt.Println("Transaction generation time:", time.Since(startTx))
 
-	// Create Block
-
+	// 7️⃣ Create block
 	startFinalize := time.Now()
 
 	newBlock := block.NewBlock(
@@ -219,11 +195,8 @@ func main() {
 
 	blockHashString := fmt.Sprintf("%x", newBlock.Hash)
 
-	// BFT Voting
-
+	// 8️⃣ BFT voting
 	votePool := consensus.NewVotePool(vs)
-
-	// PREPARE
 
 	for _, v := range validators {
 
@@ -238,15 +211,11 @@ func main() {
 	}
 
 	if !votePool.HasQuorum(blockHashString, view, consensus.Prepare) {
-
 		fmt.Println("Prepare quorum NOT reached.")
-
 		return
 	}
 
 	fmt.Println("Prepare quorum reached.")
-
-	// COMMIT
 
 	for _, v := range validators {
 
@@ -261,16 +230,13 @@ func main() {
 	}
 
 	if !votePool.HasQuorum(blockHashString, view, consensus.Commit) {
-
 		fmt.Println("Commit quorum NOT reached.")
-
 		return
 	}
 
 	fmt.Println("Commit quorum reached.")
 
-	// Persist Block
-
+	// 9️⃣ Save block
 	if err := db.SaveBlock(newBlock); err != nil {
 		log.Fatal(err)
 	}
@@ -279,7 +245,8 @@ func main() {
 
 	printBlockSummary(newBlock)
 
-	select {}
+	// 🔟 Start API server
+	startServer(db)
 }
 
 func printTxDetails(height int, index int, tx *transaction.Transaction) {
@@ -292,22 +259,16 @@ func printTxDetails(height int, index int, tx *transaction.Transaction) {
 	fmt.Println("DataHash:", tx.DataHash)
 	fmt.Println("Metadata:", tx.Metadata)
 	fmt.Println("Timestamp:", tx.Timestamp)
-
 	fmt.Printf("Signature: %x\n", tx.Signature)
-
 	fmt.Println("--------------------------------")
 }
 
 func printBlockSummary(b *block.Block) {
 
 	fmt.Println("\n========= BLOCK SUMMARY =========")
-
 	fmt.Println("Height:", b.Index)
-
 	fmt.Printf("Hash: %x\n", b.Hash)
-
 	fmt.Printf("Previous: %x\n", b.PreviousHash)
-
 	fmt.Println("Total Transactions:", len(b.Transactions))
 
 	for i := 0; i < 5 && i < len(b.Transactions); i++ {
@@ -320,7 +281,6 @@ func printBlockSummary(b *block.Block) {
 	}
 
 	if len(b.Transactions) > 5 {
-
 		fmt.Println("  ...")
 	}
 }
