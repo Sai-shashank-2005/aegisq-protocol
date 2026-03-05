@@ -30,6 +30,11 @@ func TestConsensusWith1000SyntheticTransactions(t *testing.T) {
 
 			t.Log("Using signer:", signer.Algorithm())
 
+			// Reset CGO counter only for Dilithium
+			if alg == "dilithium" {
+				crypto.ResetCGOCallCount()
+			}
+
 			// -------------------------
 			// Create 4 validators
 			// -------------------------
@@ -161,6 +166,11 @@ func TestConsensusWith1000SyntheticTransactions(t *testing.T) {
 			}
 
 			t.Log("Consensus completed successfully with 50000 synthetic transactions")
+
+			// Print CGO calls only for Dilithium
+			if alg == "dilithium" {
+				t.Log("Total CGO calls:", crypto.GetCGOCallCount())
+			}
 		})
 	}
 }
