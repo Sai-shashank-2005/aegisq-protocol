@@ -1,6 +1,5 @@
 # AegisQ Protocol
 
-<<<<<<< HEAD
 <p align="center">
 <b>Post-Quantum Secure • Deterministic BFT • Immediate Finality</b>
 </p>
@@ -58,7 +57,7 @@ This repository contains a **complete blockchain stack**, including:
 | 10    | Finality Engine      | Commit lock & fork prevention            |
 
 Each layer is modular and independently testable.
-
+S
 ---
 
 # Core Features
@@ -78,7 +77,6 @@ Once a block reaches commit quorum it becomes **permanently finalized**.
 ---
 
 ### Byzantine Fault Tolerance
-=======
 **Post-Quantum Secure • Byzantine-Resilient • Deterministic Blockchain Core**
 
 ---
@@ -128,7 +126,6 @@ Each layer is independently testable and designed for long-term extensibility.
 # Security Guarantees
 
 ## Byzantine Fault Tolerance
->>>>>>> debugBranch
 
 For `n` validators:
 
@@ -136,7 +133,6 @@ For `n` validators:
 f = (n - 1) / 3
 ```
 
-<<<<<<< HEAD
 The protocol tolerates up to **f Byzantine validators** while preserving:
 
 * Safety
@@ -166,7 +162,6 @@ Currently running with:
 * **Dilithium2 (ML‑DSA‑44)**
 
 All transactions and blocks are signed using post‑quantum cryptography.
-=======
 The system tolerates up to **f Byzantine validators** while maintaining safety and liveness.
 
 ---
@@ -211,13 +206,11 @@ No reorg assumptions.
 * Merkle hashing dominates compute cost
 * Consensus overhead remains minimal
 * No fork under tolerated Byzantine conditions
->>>>>>> debugBranch
 
 ---
 
 # Cryptographic Benchmark Results
 
-<<<<<<< HEAD
 Environment:
 
 * CPU: Intel Core i7
@@ -359,7 +352,6 @@ Example:
 
 ```
 go run ./cmd/aegisqd gettx 1 5000
-=======
 AegisQ includes both classical and post-quantum signature implementations for performance comparison and migration readiness.
 
 Benchmarks were executed using Go’s testing framework on:
@@ -385,17 +377,14 @@ goos: linux
 goarch: amd64
 cpu: 13th Gen Intel(R) Core(TM) i7-13620H
 pkg: github.com/Sai-shashank-2005/aegisq-protocol/core/crypto
->>>>>>> debugBranch
 ```
 
 ---
 
-<<<<<<< HEAD
 ## Query Transaction by Hash
 
 ```
 go run ./cmd/aegisqd gettxhash <data_hash>
-=======
 ## Benchmark Results
 
 ```
@@ -406,13 +395,10 @@ BenchmarkDilithiumVerify-16        31044    37893 ns/op       0 B/op    0 allocs
 BenchmarkECDSAKeyGen-16            52716    22555 ns/op    1304 B/op   21 allocs/op
 BenchmarkECDSASign-16              16744    71969 ns/op    7135 B/op   82 allocs/op
 BenchmarkECDSAVerify-16             9475   109940 ns/op    1504 B/op   29 allocs/op
->>>>>>> debugBranch
 ```
 
 ---
 
-<<<<<<< HEAD
-=======
 ## Performance Analysis
 
 ### Verification (Validator-Critical Path)
@@ -509,12 +495,10 @@ All tests pass within theoretical BFT tolerance bounds.
 
 ---
 
->>>>>>> debugBranch
 # Project Structure
 
 ```
 core/
-<<<<<<< HEAD
 ├── block/
 ├── consensus/
 ├── crypto/
@@ -530,7 +514,6 @@ cmd/
 
 explorer/
 └── web-ui/
-=======
 ├── block/          # Block structure & integrity
 ├── consensus/      # BFT voting & finality engine
 ├── crypto/         # PQC + classical abstraction
@@ -539,12 +522,10 @@ explorer/
 ├── scheduler/      # Leader rotation
 ├── simulation/     # Stress & Byzantine tests
 ├── transaction/    # Transaction structure
->>>>>>> debugBranch
 ```
 
 ---
 
-<<<<<<< HEAD
 # Stress Testing
 
 The system has been tested against:
@@ -570,7 +551,6 @@ All tests remain within theoretical BFT tolerance bounds.
 | Persistent Storage     | Enabled     |
 | Transaction Indexing   | Implemented |
 | Blockchain Explorer    | Functional  |
-=======
 # Getting Started
 
 ```bash
@@ -590,15 +570,12 @@ Run cryptographic benchmarks:
 ```bash
 go test ./core/crypto -bench=. -benchmem -run=^$
 ```
->>>>>>> debugBranch
 
 ---
 
 # Version
 
-<<<<<<< HEAD
 **v1.1.0 — Post‑Quantum Deterministic BFT Engine**
-=======
 `v1.0.0` — Hardened BFT Core Freeze
 
 ---
@@ -608,14 +585,10 @@ go test ./core/crypto -bench=. -benchmem -run=^$
 This project is licensed under the **MIT License**.
 
 See the `LICENSE` file for details.
->>>>>>> debugBranch
 
 ---
 
 <p align="center">
-<<<<<<< HEAD
 <b>Deterministic Trust — Engineered for Adversarial Environments</b>
-=======
 <b>Deterministic Trust. Engineered for Adversarial Environments.</b>
->>>>>>> debugBranch
 </p>
