@@ -1,233 +1,55 @@
-# AegisQ Protocol
+# AegisQ Explorer
 
-<p align="center">
-<b>Post-Quantum Secure • Deterministic BFT • Immediate Finality</b>
-</p>
+AegisQ Explorer is a web-based blockchain explorer built for the **AegisQ Protocol**, a deterministic BFT blockchain engine with post‑quantum cryptography support.
 
----
-
-# Overview
-
-**AegisQ** is a **Post-Quantum Secure Deterministic BFT Blockchain Engine** designed for high-integrity data anchoring and adversarial environments.
-
-It provides:
-
-* Deterministic consensus
-* Strict equivocation prevention
-* Immediate block finality
-* Post-quantum signature support
-* Persistent storage
-* High-throughput block processing
-
-The protocol is implemented entirely in **Go** and includes a **full blockchain explorer UI** for inspecting blocks and transactions.
+The explorer provides a real-time interface for inspecting blocks, transactions, and network metrics produced by the AegisQ network.
 
 ---
 
-# What This Project Implements
+# Features
 
-This repository contains a **complete blockchain stack**, including:
+## Network Dashboard
 
-| Component       | Description                                    |
-| --------------- | ---------------------------------------------- |
-| Protocol Engine | Deterministic BFT blockchain core              |
-| Crypto Engine   | Post-Quantum Dilithium2 + Classical signatures |
-| Consensus       | Prepare / Commit voting phases                 |
-| Ledger          | Chain integrity enforcement                    |
-| Storage         | BoltDB persistent state                        |
-| Scheduler       | Deterministic leader rotation                  |
-| Simulation      | Synthetic transaction generator                |
-| Explorer API    | REST interface for querying chain state        |
-| Explorer UI     | Real-time blockchain explorer dashboard        |
+Displays high level network metrics:
 
----
-
-# Architecture — Deterministic 10 Layer Stack
-
-| Layer | Component            | Responsibility                           |
-| ----- | -------------------- | ---------------------------------------- |
-| 1     | Crypto               | PQC + classical signature abstraction    |
-| 2     | Identity             | Validator identity & key management      |
-| 3     | Transactions         | Signed data anchoring transactions       |
-| 4     | Blocks               | Merkle-rooted block structure            |
-| 5     | Ledger               | Chain validation & integrity enforcement |
-| 6     | Validator Governance | Membership control                       |
-| 7     | Deterministic Leader | Round-robin block proposer               |
-| 8     | View Rotation        | Leader failover logic                    |
-| 9     | BFT Voting           | 2f+1 quorum enforcement                  |
-| 10    | Finality Engine      | Commit lock & fork prevention            |
-
-Each layer is modular and independently testable.
-
----
-
-# Core Features
-
-### Deterministic BFT Consensus
-
-AegisQ implements a deterministic **Prepare → Commit** consensus model.
-
-Properties:
-
-* No probabilistic finality
-* No chain reorganizations
-* No fork ambiguity
-
-Once a block reaches commit quorum it becomes **permanently finalized**.
-
----
-
-### Byzantine Fault Tolerance
-
-For `n` validators:
-
-```
-f = (n - 1) / 3
-```
-
-The protocol tolerates up to **f Byzantine validators** while preserving:
-
-* Safety
-* Liveness
-
----
-
-### Strict Equivocation Prevention
-
-Validators are prevented from:
-
-* Voting twice in the same phase
-* Voting for two blocks in the same view
-
-Any violation is rejected at the consensus layer.
-
----
-
-# Post‑Quantum Cryptography
-
-AegisQ supports both classical and post‑quantum signatures.
-
-## Active Mode
-
-Currently running with:
-
-* **Dilithium2 (ML‑DSA‑44)**
-
-All transactions and blocks are signed using post‑quantum cryptography.
-
----
-
-# Cryptographic Benchmark Results
-
-Environment:
-
-* CPU: Intel Core i7
-* OS: Linux amd64
-* Language: Go
-
-Command:
-
-```
-go test ./core/crypto -bench=. -benchmem -run=^$
-```
-
-### Results
-
-```
-BenchmarkDilithiumKeyGen        ~38µs
-BenchmarkDilithiumSign          ~104µs
-BenchmarkDilithiumVerify        ~37µs
-
-BenchmarkECDSAKeyGen            ~22µs
-BenchmarkECDSASign              ~72µs
-BenchmarkECDSAVerify            ~110µs
-```
-
-Observation:
-
-* Dilithium verification is **~3× faster than ECDSA**
-* Verification dominates validator workload
-
-Therefore Dilithium improves consensus throughput.
-
----
-
-# Runtime Performance
-
-Test workload:
-
-* **10,000 transactions per block**
-
-### Dilithium Mode
-
-| Stage                  | Time   |
-| ---------------------- | ------ |
-| Transaction Generation | ~1.2s  |
-| Block Finalization     | ~117ms |
-| Total Runtime          | <1.5s  |
-
-### Ed25519 Mode
-
-| Stage                  | Time   |
-| ---------------------- | ------ |
-| Transaction Generation | ~400ms |
-| Block Finalization     | ~35ms  |
-
-Observation:
-
-Post‑quantum signing increases cost but verification remains efficient.
-
----
-
-# Storage Architecture
-
-Persistent storage uses **BoltDB**.
-
-Buckets:
-
-* blocks
-* block_hash_index
-* tx_index
-* meta
-
-Supports:
-
-* O(1) block retrieval by height
-* O(1) transaction lookup by hash
-
----
-
-# Blockchain Explorer
-
-AegisQ includes a **full explorer UI**.
-
-Explorer capabilities:
-
-* Network dashboard
-* Block explorer
-* Transaction explorer
-* Validator monitoring
-* Block search
-* Transaction search
-
-### Dashboard Metrics
-
-* Latest block
-* Active validators
-* Block transaction count
+* Latest block height
+* Active validator count
+* Block size
 * Network TPS
 
-### Block Explorer
+Provides a quick overview of the current state of the blockchain.
 
-Displays:
+---
+
+## Block Explorer
+
+Browse all blocks produced by the AegisQ network.
+
+Each block card shows:
 
 * Block height
 * Transaction count
-* Merkle root
-* Validator proposer
+* Block hash
 
-### Transaction Explorer
+Clicking a block opens a detailed block view.
 
-Displays:
+---
+
+## Block Details
+
+Detailed view for each block including:
+
+* Block height
+* Number of transactions
+* Paginated transaction list
+
+Each transaction entry links to the transaction explorer.
+
+---
+
+## Transaction Explorer
+
+Displays full transaction information:
 
 * Sender
 * Signature algorithm
@@ -235,99 +57,156 @@ Displays:
 * Metadata
 * Timestamp
 
+Transactions can be queried by:
+
+* Block height + index
+* Data hash
+
 ---
 
-# CLI Usage
+## Search
 
-## Run Node
+Global search allows querying:
+
+* Block height
+* Transaction hash
+
+---
+
+# Architecture
+
+The explorer is built as a separate module that communicates with the AegisQ node through a REST API.
+
+```
+AegisQ Node
+   │
+   ├── Consensus Engine
+   ├── Ledger
+   ├── Storage (BoltDB)
+   │
+   └── Explorer API
+          │
+          ▼
+    Explorer Backend
+          │
+          ▼
+      Web UI
+```
+
+---
+
+# Explorer Components
+
+| Component    | Description                    |
+| ------------ | ------------------------------ |
+| Dashboard    | Real-time network monitoring   |
+| Blocks       | Block explorer interface       |
+| Transactions | Transaction lookup and details |
+| Network      | Validator and network state    |
+| Search       | Block and transaction search   |
+
+---
+
+# Example Metrics
+
+Typical runtime values:
+
+| Metric     | Value               |
+| ---------- | ------------------- |
+| Block Size | 10,000 transactions |
+| Validators | 4                   |
+| TPS        | ~1200               |
+
+---
+
+# Running the Explorer
+
+Start the AegisQ node:
 
 ```
 go run ./cmd/aegisqd
 ```
 
-Creates a block with **10,000 synthetic transactions**.
-
----
-
-## Query Transaction by Height
+Start the explorer frontend:
 
 ```
-go run ./cmd/aegisqd gettx <height> <index>
+npm install
+npm run dev
 ```
 
-Example:
+Open:
 
 ```
-go run ./cmd/aegisqd gettx 1 5000
+http://localhost:3000
 ```
 
 ---
 
-## Query Transaction by Hash
+# UI Pages
 
-```
-go run ./cmd/aegisqd gettxhash <data_hash>
-```
+## Dashboard
 
----
+Shows overall network statistics.
 
-# Project Structure
+## Blocks
 
-```
-core/
-├── block/
-├── consensus/
-├── crypto/
-├── identity/
-├── ledger/
-├── scheduler/
-├── simulation/
-├── storage/
-├── transaction/
+Displays the full list of blocks in reverse chronological order.
 
-cmd/
-└── aegisqd/
+## Transactions
 
-explorer/
-└── web-ui/
-```
+Allows direct transaction lookup.
+
+## Network
+
+Displays validator and network state.
 
 ---
 
-# Stress Testing
+# Technology Stack
 
-The system has been tested against:
+Frontend:
 
-* Double vote attack
-* Validator equivocation
-* Fork injection
-* Unauthorized validator voting
-* Block tampering
-* High load transaction simulation
+* React
+* Vite
+* TailwindCSS
+* Recharts
 
-All tests remain within theoretical BFT tolerance bounds.
+Backend API:
+
+* Go
+
+Storage:
+
+* BoltDB
 
 ---
 
-# Current System Status
+# Use Cases
 
-| Component              | Status      |
-| ---------------------- | ----------- |
-| Protocol Engine        | Complete    |
-| Post‑Quantum Crypto    | Integrated  |
-| Deterministic Finality | Enforced    |
-| Persistent Storage     | Enabled     |
-| Transaction Indexing   | Implemented |
-| Blockchain Explorer    | Functional  |
+The explorer enables:
+
+* Blockchain auditing
+* Transaction verification
+* Network monitoring
+* Validator activity inspection
+
+---
+
+# Status
+
+| Component            | Status   |
+| -------------------- | -------- |
+| Dashboard            | Complete |
+| Block Explorer       | Complete |
+| Transaction Explorer | Complete |
+| Search               | Complete |
 
 ---
 
 # Version
 
-**v1.1.0 — Post‑Quantum Deterministic BFT Engine**
+Explorer v1.0
 
 ---
 
-<p align="center">
-<b>Deterministic Trust — Engineered for Adversarial Environments</b>
-</p>
+**AegisQ Explorer — Inspect Deterministic Finality**
