@@ -10,129 +10,162 @@ import {
   Activity
 } from "lucide-react"
 
-export default function Sidebar(){
+export default function Sidebar() {
 
-const pathname = usePathname()
+  const pathname = usePathname()
 
-return(
+  return (
 
-<div className="w-72 h-screen bg-gradient-to-b from-gray-950 to-gray-900 border-r border-gray-800 flex flex-col justify-between fixed left-0 top-0">
+    <div className="
+      w-72 h-screen fixed left-0 top-0 z-50
+      bg-gradient-to-b from-gray-950 to-black
+      border-r border-white/5
+      flex flex-col justify-between
+    ">
 
-{/* ===== BRAND ===== */}
+      {/* ===== BRAND ===== */}
+      <div>
 
-<div>
+        <div className="px-6 py-6 border-b border-white/5">
 
-<div className="px-6 py-6 border-b border-gray-800">
+          <div className="flex items-center gap-3">
 
-<div className="flex items-center gap-3">
+            <div className="relative">
 
-<Image
-src="/logo.png"
-width={42}
-height={42}
-alt="AegisQ"
-/>
+              <Image
+                src="/logov2.png"
+                width={42}
+                height={42}
+                alt="AegisQ"
+                className="rounded-lg"
+              />
 
-<div>
+              {/* subtle glow */}
+              <div className="absolute inset-0 rounded-lg bg-blue-500/10 blur-md opacity-40" />
 
-<h1 className="text-lg font-semibold text-white">
-AegisQ Explorer
-</h1>
+            </div>
 
-<p className="text-xs text-gray-500">
-Hybrid BFT Blockchain
-</p>
+            <div>
+              <h1 className="text-white font-semibold tracking-tight">
+                AegisQ Explorer
+              </h1>
+              <p className="text-xs text-gray-500">
+                Hybrid BFT Blockchain
+              </p>
+            </div>
 
-</div>
+          </div>
 
-</div>
+        </div>
 
-</div>
+        {/* ===== NAV ===== */}
+        <nav className="px-3 py-6 space-y-2">
 
-{/* ===== NAVIGATION ===== */}
+          <SidebarLink
+            href="/"
+            label="Dashboard"
+            icon={<LayoutDashboard size={18} />}
+            active={pathname === "/"}
+          />
 
-<nav className="px-4 py-6 space-y-2">
+          <SidebarLink
+            href="/blocks"
+            label="Blocks"
+            icon={<Blocks size={18} />}
+            active={pathname === "/blocks"}
+          />
 
-<SidebarLink
-href="/"
-label="Dashboard"
-icon={<LayoutDashboard size={18}/>}
-active={pathname === "/"}
-/>
+          {/* ❌ REMOVE IF NOT IMPLEMENTED */}
+          {/* 
+          <SidebarLink
+            href="/transactions"
+            label="Transactions"
+            icon={<ArrowRightLeft size={18} />}
+            active={pathname === "/transactions"}
+          />
 
-<SidebarLink
-href="/blocks"
-label="Blocks"
-icon={<Blocks size={18}/>}
-active={pathname === "/blocks"}
-/>
+          <SidebarLink
+            href="/network"
+            label="Network"
+            icon={<Activity size={18} />}
+            active={pathname === "/network"}
+          />
+          */}
 
-<SidebarLink
-href="/transactions"
-label="Transactions"
-icon={<ArrowRightLeft size={18}/>}
-active={pathname === "/transactions"}
-/>
+        </nav>
 
-<SidebarLink
-href="/network"
-label="Network"
-icon={<Activity size={18}/>}
-active={pathname === "/network"}
-/>
+      </div>
 
-</nav>
+      {/* ===== FOOTER ===== */}
+      <div className="px-5 py-5 border-t border-white/5">
 
-</div>
+        <div className="flex items-center gap-2 text-xs text-gray-400">
 
-{/* ===== FOOTER ===== */}
+          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
 
-<div className="px-6 py-5 border-t border-gray-800">
+          Network Operational
 
-<div className="flex items-center gap-2 text-xs text-gray-500">
+        </div>
 
-<span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+        <div className="mt-3 text-[11px] text-gray-600 space-y-1">
 
-Network Operational
+          <p>Validators: 4</p>
+          <p>Fault Tolerance: f = 1</p>
+          <p>Consensus: BFT</p>
 
-</div>
+        </div>
 
-<p className="text-xs text-gray-600 mt-2">
-AegisQ Node v1.0
-</p>
+        <p className="text-[10px] text-gray-700 mt-4">
+          AegisQ Node v1.0
+        </p>
 
-</div>
+      </div>
 
-</div>
+    </div>
 
-)
-
+  )
 }
 
-function SidebarLink({href,label,icon,active}:any){
+function SidebarLink({ href, label, icon, active }: any) {
 
-return(
+  return (
 
-<Link
-href={href}
-className={`group relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
-${active
-? "bg-blue-500/10 text-blue-400"
-: "text-gray-400 hover:bg-gray-800 hover:text-white"
-}`}
+    <Link
+      href={href}
+      className={`
+        group relative flex items-center gap-3
+        px-4 py-3 rounded-xl text-sm
+        transition-all duration-300 overflow-hidden
 
->
+        ${active
+          ? "bg-gradient-to-r from-blue-500/20 to-blue-500/5 text-blue-400 border border-blue-500/30"
+          : "text-gray-400 hover:text-white hover:bg-white/5"
+        }
+      `}
+    >
 
-{active && (
-<span className="absolute left-0 top-2 bottom-2 w-1 bg-blue-500 rounded-r"></span>
-)}
+      {/* glow hover */}
+      <div className="
+        absolute inset-0 opacity-0 group-hover:opacity-100
+        bg-gradient-to-r from-blue-500/10 to-transparent
+        transition duration-300
+      " />
 
-{icon}
+      {/* left indicator */}
+      {active && (
+        <span className="
+          absolute left-0 top-2 bottom-2 w-[2px]
+          bg-blue-400 rounded-r shadow-[0_0_8px_rgba(59,130,246,0.8)]
+        " />
+      )}
 
-{label}
+      <div className="relative z-10 group-hover:scale-110 transition">
+        {icon}
+      </div>
 
-</Link>
+      <span className="relative z-10">{label}</span>
 
-)
+    </Link>
 
+  )
 }

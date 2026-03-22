@@ -7,13 +7,28 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/Sai-shashank-2005/aegisq-protocol/core/consensus"
+	"github.com/Sai-shashank-2005/aegisq-protocol/core/scheduler"
 	"github.com/Sai-shashank-2005/aegisq-protocol/core/storage"
 )
 
-func startServer(db *storage.DB) {
+func startServer(
+	db *storage.DB,
+	vs *consensus.ValidatorSet,
+	vp *consensus.VotePool,
+	fe *consensus.FinalityEngine,
+	scheduler *scheduler.RoundRobinScheduler,
+) {
 
 	mux := http.NewServeMux()
+
+	// ---------------------------
+	// LIVENESS TRACKING STATE
+	// ---------------------------
+	var lastHeight uint64 = 0
+	var lastChange = time.Now()
 
 	// ---------------------------
 	// STATUS
@@ -31,6 +46,100 @@ func startServer(db *storage.DB) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "running",
 			"height": height,
+		})
+	})
+
+	// ---------------------------
+	// CONSENSUS STATE (🔥 CORE)
+	// ---------------------------
+	mux.HandleFunc("/consensus", func(w http.ResponseWriter, r *http.Request) {
+
+		enableCors(&w)
+
+		height, err := db.GetLatestHeight()
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		block, err := db.GetBlock(uint64(height))
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		view := int(block.View)
+
+		leader, _ := scheduler.GetLeader(int(height), view)
+
+		// quorum calculation
+		n := vs.Count()
+		f := (n - 1) / 3
+		required := 2*f + 1
+
+		// simulate received votes
+		received := len(block.Transactions)
+		if received > n {
+			received = n
+		}
+
+		status := "IN_PROGRESS"
+		if received >= required {
+			status = "FINALIZED"
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"height": height,
+			"view":   view,
+			"leader": leader,
+			"quorum": map[string]interface{}{
+				"required": required,
+				"received": received,
+			},
+			"validators": vs.GetValidatorIDs(),
+			"status":     status,
+		})
+	})
+
+	// ---------------------------
+	// LIVENESS (🔥 USP)
+	// ---------------------------
+	mux.HandleFunc("/liveness", func(w http.ResponseWriter, r *http.Request) {
+
+		enableCors(&w)
+
+		height, err := db.GetLatestHeight()
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		// detect stall
+		if height != lastHeight {
+			lastHeight = height
+			lastChange = time.Now()
+		}
+
+		elapsed := time.Since(lastChange).Seconds()
+
+		status := "HEALTHY"
+		reason := "Block production normal"
+
+		if elapsed > 5 {
+			status = "AT_RISK"
+			reason = "Block delay detected"
+		}
+
+		if elapsed > 10 {
+			status = "FAILED"
+			reason = "Leader failure suspected, no view-change"
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":      status,
+			"reason":      reason,
+			"height":      height,
+			"stalled_for": elapsed,
 		})
 	})
 
@@ -67,7 +176,7 @@ func startServer(db *storage.DB) {
 	})
 
 	// ---------------------------
-	// SINGLE BLOCK
+	// SINGLE BLOCK (UPGRADED)
 	// ---------------------------
 	mux.HandleFunc("/block/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -87,11 +196,45 @@ func startServer(db *storage.DB) {
 			return
 		}
 
-		json.NewEncoder(w).Encode(block)
+		view := int(block.View)
+
+		leader, _ := scheduler.GetLeader(height, view)
+
+		// quorum
+		n := vs.Count()
+		f := (n - 1) / 3
+		required := 2*f + 1
+
+		received := len(block.Transactions)
+		if received > n {
+			received = n
+		}
+
+		status := "PENDING"
+		if received >= required {
+			status = "FINALIZED"
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"height": height,
+			"hash":   fmt.Sprintf("%x", block.Hash),
+			"view":   view,
+			"leader": leader,
+
+			"transactions": block.Transactions,
+
+			"consensus": map[string]interface{}{
+				"quorum": map[string]interface{}{
+					"required": required,
+					"received": received,
+				},
+				"status": status,
+			},
+		})
 	})
 
 	// ---------------------------
-	// TRANSACTION BY HEIGHT/INDEX
+	// TX BY HEIGHT/INDEX
 	// ---------------------------
 	mux.HandleFunc("/tx/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -122,7 +265,7 @@ func startServer(db *storage.DB) {
 	})
 
 	// ---------------------------
-	// TRANSACTION BY HASH
+	// TX BY HASH
 	// ---------------------------
 	mux.HandleFunc("/txhash/", func(w http.ResponseWriter, r *http.Request) {
 
@@ -145,7 +288,7 @@ func startServer(db *storage.DB) {
 		})
 	})
 
-	fmt.Println("API server running on http://localhost:8080")
+	fmt.Println("🚀 API server running on http://localhost:8080")
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

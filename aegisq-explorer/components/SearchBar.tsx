@@ -1,43 +1,66 @@
 "use client"
 
-import {useState} from "react"
-import {useRouter} from "next/navigation"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Search } from "lucide-react"
 
-export default function SearchBar(){
+export default function SearchBar() {
 
-const [query,setQuery]=useState("")
-const router=useRouter()
+  const [query, setQuery] = useState("")
+  const router = useRouter()
 
-function search(){
+  function search() {
+    if (!query.trim()) return
 
-if(!query) return
+    if (/^\d+$/.test(query)) {
+      router.push(`/block/${query}`)
+    } else {
+      router.push(`/txhash/${query}`)
+    }
+  }
 
-if(/^\d+$/.test(query)){
-router.push(`/block/${query}`)
-}else{
-router.push(`/txhash/${query}`)
-}
+  return (
 
-}
+    <div className="relative w-full max-w-md">
 
-return(
+      {/* 🔥 INPUT */}
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && search()}
+        placeholder="Search block height or tx hash..."
+        className="
+          w-full pl-10 pr-24 py-2.5
+          bg-gray-900/80 backdrop-blur
+          border border-gray-800
+          rounded-xl text-sm text-white
+          placeholder:text-gray-500
+          focus:outline-none focus:border-blue-500/50
+          transition
+        "
+      />
 
-<div className="flex gap-2">
+      {/* 🔍 ICON */}
+      <Search
+        size={16}
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+      />
 
-<input
-className="bg-gray-900 border border-gray-700 px-3 py-2 rounded w-64"
-placeholder="Search block height or tx hash"
-value={query}
-onChange={e=>setQuery(e.target.value)}
-/>
+      {/* 🔥 BUTTON (embedded) */}
+      <button
+        onClick={search}
+        className="
+          absolute right-1 top-1/2 -translate-y-1/2
+          px-3 py-1.5 rounded-lg text-xs font-medium
+          bg-blue-500/10 border border-blue-500/30
+          text-blue-400 hover:bg-blue-500/20
+          transition
+        "
+      >
+        Search
+      </button>
 
-<button
-onClick={search}
-className="bg-blue-600 px-4 py-2 rounded"
->
-Search
-</button>
+    </div>
 
-</div>
-)
+  )
 }

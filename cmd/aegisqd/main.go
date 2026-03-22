@@ -246,7 +246,15 @@ func main() {
 	printBlockSummary(newBlock)
 
 	// 🔟 Start API server
-	startServer(db)
+
+	// reuse existing votePool (already created above)
+	vp := votePool
+
+	// create finality engine (safe, no logic change)
+	fe := consensus.NewFinalityEngine(vp)
+
+	// use existing scheduler (rename fix)
+	startServer(db, vs, vp, fe, sched)
 }
 
 func printTxDetails(height int, index int, tx *transaction.Transaction) {
