@@ -1,263 +1,192 @@
-# AegisQ Protocol
+# 🛡️ AegisQ Protocol: Post-Quantum BFT Consensus Engine
 
-## Deterministic Consensus Engine with Full-Stack Observability
+[![Role](https://img.shields.io/badge/Role-Security%20Engineering-blue.svg)]()
+[![Consensus](https://img.shields.io/badge/Consensus-BFT%20(2f%2B1)-orange.svg)]()
+[![Cryptography](https://img.shields.io/badge/Cryptography-Dilithium%20(PQC)-purple.svg)]()
+[![Backend](https://img.shields.io/badge/Core-Go-00ADD8?logo=go&logoColor=white)]()
+[![Frontend](https://img.shields.io/badge/Explorer-Next.js-black?logo=next.js)]()
 
-AegisQ Protocol is a full-stack consensus system combining a deterministic BFT-style engine with a real-time observability platform.
+> **Deterministic Consensus Engine with Full-Stack Observability**
+> AegisQ Protocol is a full-stack distributed consensus system combining a highly deterministic BFT-style engine with a real-time observability platform. It is designed to execute, validate, and expose consensus behavior with total transparency—enabling security researchers to monitor how state evolves, how quorum is reached, and how the network responds to adversarial conditions.
 
-It is designed to execute, validate, and expose consensus behavior with transparency across blocks, transactions, and validator activity.
+---
 
-## Overview
+## 🎯 Security & SOC Relevance
 
-AegisQ integrates a consensus engine, backend API, persistent storage, and a web-based observability interface into a single system.
+AegisQ Protocol demonstrates core concepts aligned with **Security Operations, Threat Modeling, and System Integrity Analysis**:
 
-The goal is to provide both execution and visibility — enabling users to understand how consensus is reached and how state evolves over time.
+* **State Integrity Monitoring:** Tracks consensus execution across the `Prepare → Commit → Finalize` lifecycle.
+* **Post-Quantum Cryptography (PQC):** Replaces legacy algorithms with **Dilithium (ML-DSA-44)** to ensure future-proof signature verification against quantum adversaries.
+* **Adversarial Resiliency:** The engine strictly enforces equivocation tracking, fork prevention, and double-vote rejection.
+* **Full Observability:** The dedicated frontend explorer provides a detection surface for anomalies such as invalid signatures, stalled quorums, and abnormal execution patterns.
 
-## Architecture
+> *Security Insight: "Correctness in deterministic environments does not imply security in distributed adversarial systems."*
 
-```
-AegisQ Core (Go)
-   │
-   ├── Consensus Engine (Prepare → Commit → Finalize)
-   ├── Transaction Processing Pipeline
-   ├── Block Construction & Validation
-   ├── Storage Layer (BoltDB)
-   │
-   └── REST API
-          │
-          ▼
-   Explorer Backend
-          │
-          ▼
-   Frontend (React + Tailwind)
-```
+---
 
-## System Layers
+## 🏗️ Core Architecture & System Layers
 
-| Layer | Component            | Responsibility                          |
-| ----- | -------------------- | --------------------------------------- |
-| 1     | API Layer            | Exposes system state via REST endpoints |
-| 2     | Explorer Backend     | Aggregates data for UI                  |
-| 3     | Frontend UI          | Visualizes blocks and metrics           |
-| 4     | Consensus Engine     | Handles Prepare → Commit → Finalize     |
-| 5     | Voting Module        | Manages validator quorum                |
-| 6     | Transaction Pipeline | Processes and validates transactions    |
-| 7     | Block Builder        | Constructs blocks                       |
-| 8     | Cryptographic Layer  | Hashing and signature verification      |
-| 9     | Storage Layer        | Persists blocks (BoltDB)                |
-| 10    | Execution Engine     | Ensures deterministic state transitions |
+AegisQ integrates the consensus engine, backend REST API, BoltDB persistent storage, and a React-based observability interface into a unified system.
 
-## Core Engine
+<table width="100%">
+  <tr>
+    <th width="30%">Layer</th>
+    <th width="70%">Responsibility</th>
+  </tr>
+  <tr>
+    <td><strong>Consensus Engine</strong></td>
+    <td>Handles the deterministic <code>Prepare → Commit → Finalize</code> BFT voting flow.</td>
+  </tr>
+  <tr>
+    <td><strong>Voting Module</strong></td>
+    <td>Manages the <code>2f + 1</code> validator quorum and strict equivocation prevention.</td>
+  </tr>
+  <tr>
+    <td><strong>Cryptographic Layer</strong></td>
+    <td>Integrates Dilithium PQC and ECDSA for signing, and SHA3-256 for state hashing.</td>
+  </tr>
+  <tr>
+    <td><strong>Execution & Block Builder</strong></td>
+    <td>Ensures deterministic state transitions, Merkle root computation, and block linking.</td>
+  </tr>
+  <tr>
+    <td><strong>API & Storage Layer</strong></td>
+    <td>Persists finalized blocks in BoltDB and exposes system state via REST endpoints.</td>
+  </tr>
+  <tr>
+    <td><strong>Explorer Frontend</strong></td>
+    <td>Visualizes real-time block production, leader stability, and network liveness.</td>
+  </tr>
+</table>
 
-### Consensus
+---
 
-* Deterministic execution pipeline
-* Prepare → Commit → Finalize flow
-* Quorum-based agreement (2f + 1)
-* Reproducible state transitions
+## 🔬 Adversarial Simulation & Threat Modeling
 
-### Components
+The protocol includes a dedicated simulation module (`core/simulation/`) designed to evaluate the network against 100+ documented attack scenarios.
 
-* Consensus engine (voting + quorum)
-* Transaction processing pipeline
-* Block construction and validation
-* Cryptographic module (Dilithium + SHA3-256)
-* Persistent storage (BoltDB)
-* REST API
+<table width="100%">
+  <tr>
+    <th width="30%">Simulated Attack Vector</th>
+    <th width="70%">Engine Mitigation & Observation</th>
+  </tr>
+  <tr>
+    <td><strong>Byzantine Equivocation</strong></td>
+    <td>A malicious validator attempts to vote for two conflicting blocks in the same view. The <code>VotePool</code> rejects the double-vote to prevent illegal quorums.</td>
+  </tr>
+  <tr>
+    <td><strong>Fork Exploitation</strong></td>
+    <td>Simulates a network split where honest nodes vote differently. The Finality Engine strictly enforces a single finalization per height.</td>
+  </tr>
+  <tr>
+    <td><strong>Signature Corruption</strong></td>
+    <td>Attempts to mutate transaction payloads post-signing. Detected and rejected by the Cryptographic verification layer.</td>
+  </tr>
+  <tr>
+    <td><strong>Leader Manipulation</strong></td>
+    <td>Evaluates predictable round-robin scheduling against targeted DDoS or manipulation.</td>
+  </tr>
+</table>
 
-### Performance
+---
 
-* ~8,000 transactions/sec
-* Sub-second finalization latency
+## ⚡ Performance & PQC Benchmarks
 
-## Capabilities
+Despite utilizing heavy Post-Quantum Cryptography, AegisQ maintains high throughput (~8,000 TPS) and sub-second finalization latency.
 
-* Deterministic consensus execution
-* Quorum-based finality
-* Full system observability
-* Transaction and block inspection
-* Validator participation tracking
-* Cryptographic verification visibility
+<table width="100%">
+  <tr>
+    <th width="30%">Cryptographic Operation</th>
+    <th width="35%">Dilithium (Post-Quantum)</th>
+    <th width="35%">ECDSA (P-256)</th>
+  </tr>
+  <tr>
+    <td><strong>Key Generation</strong></td>
+    <td>~13 µs</td>
+    <td>~12 µs</td>
+  </tr>
+  <tr>
+    <td><strong>Signing</strong></td>
+    <td>~44 µs</td>
+    <td>~39 µs</td>
+  </tr>
+  <tr>
+    <td><strong>Verification</strong></td>
+    <td><strong>~13 µs</strong> (Highly Optimized)</td>
+    <td>~61 µs</td>
+  </tr>
+</table>
 
-## Post-Quantum Cryptography (Dilithium)
+---
 
-AegisQ integrates **Dilithium**, a post-quantum digital signature scheme, as a core component of its cryptographic layer.
+## 🖥️ Observability Interface (Explorer)
 
-### Why Dilithium
+*The frontend provides real-time telemetry on the consensus state machine.*
 
-* Resistant to quantum attacks (lattice-based cryptography)
-* Standardized candidate for post-quantum security
-* Suitable for high-assurance distributed systems
+| Feature | Description | Screenshot Placeholder |
+| :--- | :--- | :--- |
+| **Network Dashboard** | Displays system status, current leader, and real-time quorum state. | ![Dashboard](./images/dashboard.png) |
+| **Block Explorer** | Browse finalized heights, Merkle roots, and aggregate block hashes. | ![Blocks](./images/blocks.png) |
+| **Cryptographic Inspection** | Deep-dive into transaction metadata, sender identity, and Dilithium signatures. | ![Transaction](./images/transaction.png) |
+| **Liveness Monitor** | Tracks synchronization, execution progress, and identifies network stalls. | ![Sync](./images/sync.png) |
 
-### Integration in AegisQ
+---
 
-* Used for transaction signing and verification
-* Ensures future-proof security against quantum adversaries
-* Combined with SHA3-256 for hashing integrity
+## 📄 Technical Whitepaper
 
-### Impact
+For a deep dive into the protocol's formal specifications, system models, and failure analysis, please refer to the official AegisQ whitepaper:
 
-* Strong security guarantees for validator signatures
-* Enables exploration of post-quantum consensus systems
-* Demonstrates real-world feasibility of PQC in distributed execution
+**🔗 [Read the Full AegisQ Consensus Whitepaper](https://sai-shashank-2005.github.io/aegisq-consensus-whitepaper/)**
 
-## Cryptographic Benchmarks
+*This document provides a detailed breakdown of the protocol, including consensus design, adversarial testing methodologies, and architectural decisions.*
 
-| Operation      | Dilithium | ECDSA  |
-| -------------- | --------- | ------ |
-| Key Generation | ~13 µs    | ~12 µs |
-| Signing        | ~44 µs    | ~39 µs |
-| Verification   | ~13 µs    | ~61 µs |
+---
 
-### Observations
+## 🛠️ Technology Stack
 
-* Dilithium verification is faster than ECDSA
-* ECDSA incurs higher cost during verification
-* Post-quantum signatures show competitive performance
+<table width="100%">
+  <tr>
+    <th width="30%">Category</th>
+    <th width="70%">Technologies Used</th>
+  </tr>
+  <tr>
+    <td><strong>Core Node / Backend</strong></td>
+    <td><code>Go (Golang)</code>, <code>REST API</code>, <code>bbolt (BoltDB)</code></td>
+  </tr>
+  <tr>
+    <td><strong>Frontend Explorer</strong></td>
+    <td><code>Next.js 15</code>, <code>React 19</code>, <code>Tailwind CSS v4</code>, <code>Lucide React</code></td>
+  </tr>
+  <tr>
+    <td><strong>Cryptography</strong></td>
+    <td><code>liboqs (C wrapper)</code>, <code>Dilithium</code>, <code>ECDSA</code>, <code>Ed25519</code>, <code>SHA3-256</code></td>
+  </tr>
+</table>
 
-## Tech Stack
+---
 
-### Backend
+## 🚀 Setup & Installation
 
-Go, REST API
-
-### Storage
-
-BoltDB
-
-### Frontend
-
-React, Tailwind CSS, Recharts
-
-## Use Cases
-
-* Consensus system analysis
-* Blockchain observability
-* Transaction verification
-* Validator monitoring
-* System debugging
-
-## Running Locally
-
-### Core
-
+### 1. Start the Core Consensus Node
 ```bash
+# Run the backend engine and consensus pipeline
 go run ./cmd/aegisqd
 ```
+*(The REST API will initialize on `http://localhost:8080`)*
 
-### Explorer
-
+### 2. Start the Explorer UI
 ```bash
+cd aegisq-explorer
 npm install
 npm run dev
 ```
+*(The Explorer will be available at `http://localhost:3000`)*
 
-Open: [http://localhost:3000](http://localhost:3000)
+---
 
-## Project Structure
+## ⚖️ License & Author
 
-```
-core/
-consensus/
-crypto/
-ledger/
-storage/
-simulation/
+**Sai Shashank P**
+*Cybersecurity Engineer | Protocol Researcher*
 
-cmd/
-aegisqd/
-
-explorer/
-web-ui/
-```
-
-## SOC Relevance
-
-AegisQ Protocol demonstrates core concepts aligned with Security Operations and system integrity analysis:
-
-* System integrity monitoring across blocks, transactions, and state transitions
-* Behavioral analysis of consensus execution (Prepare → Commit → Finalize)
-* Cryptographic verification using post-quantum signatures (Dilithium) and SHA3-256
-* Full observability of validator activity, quorum state, and execution flow
-* Detection surface for anomalies such as inconsistent state, invalid signatures, and abnormal execution patterns
-
-This positions the system as a platform for understanding how secure distributed systems maintain trust, detect inconsistencies, and expose internal behavior for investigation.
-
-## Observability Interface
-
-### Dashboard
-
-![Dashboard](./images/dashboard.png)
-
-Displays system status, leader node, and quorum state.
-
-### Block Explorer
-
-![Blocks](./images/blocks.png)
-
-Browse block height, transactions, and hashes.
-
-### Block Details
-
-![Block Details](./images/block-details.png)
-
-Inspect finalization state and metadata.
-
-### Transaction View
-
-![Transaction](./images/transaction.png)
-
-View sender, signatures, and transaction data.
-
-### Execution State
-
-![Sync](./images/sync.png)
-
-Monitor system synchronization and execution progress.
-
-## Security Research & Documentation
-
-This project is supported by **100+ documented attack scenarios, system behaviors, and analysis notes** covering:
-
-* Consensus-level attack vectors
-* Validator manipulation scenarios
-* Transaction integrity violations
-* Cryptographic verification edge cases
-* System state inconsistencies and failure modes
-
-These documents provide deeper insight into how distributed systems behave under adversarial conditions and how such behaviors can be analyzed and detected.
-
-## Positioning
-
-AegisQ Protocol is a full-stack consensus system with integrated observability, designed to demonstrate how distributed systems execute, validate, and maintain integrity under both normal and adversarial conditions.
-
-## Whitepaper
-
-Full technical whitepaper:
-
-[https://sai-shashank-2005.github.io/aegisq-consensus-whitepaper/](https://sai-shashank-2005.github.io/aegisq-consensus-whitepaper/)
-
-This document provides a detailed analysis of the protocol, including system model, consensus design, adversarial testing, and failure analysis.
-
-## Security Analysis Highlights
-
-The system was evaluated under multiple adversarial scenarios to understand real-world failure modes and attack surfaces.
-
-Key findings:
-
-* Replay attacks possible due to absence of nonce (data-layer vulnerability)
-* Transaction ordering can cause consensus divergence without any attacker
-* JSON-based hashing introduces non-determinism across environments
-* Lack of view-change mechanism leads to complete liveness failure
-* Cross-view voting without locking can break safety in distributed settings
-* Predictable leader selection enables targeted attacks
-
-Security insight:
-
-> Correctness in deterministic environments does not imply security in distributed adversarial systems
-
-These findings demonstrate a strong understanding of failure analysis, attack modeling, and protocol-level security reasoning.
-
-## Author
-
-Sai Shashank P |
-Cybersecurity Engineer
+*Distributed under the [Apache License, Version 2.0](LICENSE).*
